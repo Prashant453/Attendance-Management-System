@@ -1,5 +1,5 @@
 # Production Fast-Build Dockerfile for Attendify Vision Backend
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Prevent interactive prompts, buffer output, and constrain CMake RAM
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -19,8 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     python3-dlib \
     python3-numpy \
-    && cp -r /usr/lib/python3/dist-packages/dlib* /usr/local/lib/python3.10/site-packages/ 2>/dev/null || true \
+    && cp -r /usr/lib/python3/dist-packages/dlib* /usr/local/lib/python3.11/site-packages/ 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 

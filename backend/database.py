@@ -5,41 +5,51 @@ import certifi
 import bcrypt
 import json
 import logging
+import time
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 DB_HOST = os.getenv('DB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com')
 DB_PORT = int(os.getenv('DB_PORT', 4000))
 DB_USER = os.getenv('DB_USER', '2eAouK5J29qLK5G.root')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'jWBZIi1sWAV6dWpx')
 DB_NAME = os.getenv('DB_NAME', 'attendance_db')
 DB_SSL = os.getenv('DB_SSL', 'true').lower() in ('true', '1', 'yes')
 
-def get_db_connection(use_db=True):
-    """Establishes a secure connection to TiDB Cloud."""
-    try:
-        ssl_config = {'ca': certifi.where()} if DB_SSL else None
-        conn = pymysql.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME if use_db else None,
-            ssl=ssl_config,
-            cursorclass=pymysql.cursors.DictCursor,
-            autocommit=True,
-            connect_timeout=10,
-            charset='utf8mb4'
-        )
-        return conn
-    except pymysql.MySQLError as err:
-        logger.error(f"TiDB Cloud Connection Error: {err}")
-        raise
+def get_db_connection(use_db=True, max_retries=3):
+    """Establishes a secure TLS/SSL connection to TiDB Cloud with retry resilience."""
+    ssl_config = {'ca': certifi.where()} if DB_SSL else None
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = pymysql.connect(
+                host=DB_HOST,
+                port=DB_PORT,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME if use_db else None,
+                ssl=ssl_config,
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=True,
+                connect_timeout=15,
+                read_timeout=15,
+                write_timeout=15,
+                charset='utf8mb4'
+            )
+            return conn
+        except pymysql.MySQLError as err:
+            logger.warning(f"TiDB Cloud connection attempt {attempt}/{max_retries} failed: {err}")
+            if attempt < max_retries:
+                time.sleep(1.5)
+            else:
+                logger.error(f"Failed to connect to TiDB Cloud at {DB_HOST}:{DB_PORT} after {max_retries} attempts.")
+                raise
+
 
 def init_db():
     """Initializes the database schema and seeds initial data if missing."""

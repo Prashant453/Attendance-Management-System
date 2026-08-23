@@ -1,22 +1,24 @@
-﻿services:
+services:
   - type: web
     name: attendify-backend
-    runtime: docker
-    dockerfilePath: ./Dockerfile
+    runtime: python
     plan: free
     region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --chdir backend --workers 2 --timeout 120
     envVars:
       - key: DB_HOST
-        sync: false
+        value: gateway01.ap-southeast-1.prod.aws.tidbcloud.com
       - key: DB_PORT
         value: "4000"
       - key: DB_USER
-        sync: false
+        value: 2eAouK5J29qLK5G.root
       - key: DB_PASSWORD
-        sync: false
+        value: jWBZIi1sWAV6dWpx
       - key: DB_NAME
         value: attendance_db
       - key: DB_SSL
         value: "true"
       - key: SECRET_KEY
         generateValue: true
+

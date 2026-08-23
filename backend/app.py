@@ -20,20 +20,19 @@ logger = logging.getLogger(__name__)
 from flask import send_from_directory
 
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
-app = Flask(__name__, static_folder=frontend_dir)
-CORS(app)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_jwt_secret_key_123')
+app = Flask(__name__, static_folder=frontend_dir if os.path.exists(frontend_dir) else None)
 
-@app.route('/')
-def index():
-    return send_from_directory(frontend_dir, 'index.html')
+# Enable universal Cross-Origin Resource Sharing (CORS) for Vercel/Cloud frontends
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-@app.route('/<path:path>')
-def serve_static(path):
-    if os.path.exists(os.path.join(frontend_dir, path)):
-        return send_from_directory(frontend_dir, path)
-    return send_from_directory(frontend_dir, 'index.html')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'attendify_super_jwt_secret_key_2026')
 
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,x-access-token,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
 
 # Helper to run dictionary queries in TiDB Cloud
 def query_db(query, args=(), one=False):
@@ -54,17 +53,29 @@ def token_required(f):
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
         if not token:
-            return jsonify({'message': 'Token is missing!'}), 401
+            return jsonify({'message': 'Authentication token is missing!'}), 401
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             current_user = data
         except Exception:
-            return jsonify({'message': 'Token is invalid or expired!'}), 401
+            return jsonify({'message': 'Authentication token is invalid or expired!'}), 401
         return f(current_user, *args, **kwargs)
     return decorated
 
-# ----------------- Health & Status Endpoint -----------------
 
+@app.route('/')
+def index():
+    if os.path.exists(os.path.join(frontend_dir, 'index.html')):
+        return send_from_directory(frontend_dir, 'index.html')
+    return jsonify({
+        'status': 'online',
+        'service': 'Attendify Facial Biometrics Backend API',
+        'version': '2.0.0',
+        'database': 'TiDB Cloud Serverless',
+        'health_check': '/api/health'
+    }), 200
+
+@app.route('/health')
 @app.route('/api/health', methods=['GET'])
 def health_check():
     try:
@@ -73,9 +84,28 @@ def health_check():
             cur.execute("SELECT 1 AS ok;")
             res = cur.fetchone()
         conn.close()
-        return jsonify({'status': 'healthy', 'database': 'connected', 'db_type': 'TiDB Cloud'}), 200
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'db_type': 'TiDB Cloud Serverless',
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }), 200
     except Exception as e:
-        return jsonify({'status': 'unhealthy', 'database_error': str(e)}), 500
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'degraded',
+            'database_error': str(e),
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }), 500
+
+@app.route('/<path:path>')
+def serve_static(path):
+    if os.path.exists(os.path.join(frontend_dir, path)):
+        return send_from_directory(frontend_dir, path)
+    if os.path.exists(os.path.join(frontend_dir, 'index.html')):
+        return send_from_directory(frontend_dir, 'index.html')
+    return jsonify({'message': 'Endpoint not found'}), 404
+
 
 # ----------------- Auth Endpoints -----------------
 
