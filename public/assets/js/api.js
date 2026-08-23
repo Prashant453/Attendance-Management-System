@@ -5,26 +5,34 @@
 
 // Dynamically resolve API URL across local, Vercel, and cloud deployments
 function resolveApiBaseUrl() {
+    let url = undefined;
     if (window.ATTENDIFY_CONFIG && window.ATTENDIFY_CONFIG.API_BASE_URL) {
-        return window.ATTENDIFY_CONFIG.API_BASE_URL;
+        url = window.ATTENDIFY_CONFIG.API_BASE_URL;
+    } else if (window.ENV_API_URL) {
+        url = window.ENV_API_URL;
+    } else if (localStorage.getItem('API_BASE_URL')) {
+        url = localStorage.getItem('API_BASE_URL');
+    } else {
+        const isSeparateLocalPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+                                    window.location.port !== '5000' && 
+                                    window.location.port !== '';
+        url = isSeparateLocalPort ? 'http://localhost:5000/api' : '/api';
     }
-    if (window.ENV_API_URL) {
-        return window.ENV_API_URL;
+
+    // Strip trailing slash
+    url = url.replace(/\/+$/, '');
+
+    // If absolute URL provided without /api prefix, ensure /api is appended
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (!url.endsWith('/api')) {
+            url = `${url}/api`;
+        }
     }
-    const customUrl = localStorage.getItem('API_BASE_URL');
-    if (customUrl) {
-        return customUrl;
-    }
-    const isSeparateLocalPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
-                                window.location.port !== '5000' && 
-                                window.location.port !== '';
-    if (isSeparateLocalPort) {
-        return 'http://localhost:5000/api';
-    }
-    return '/api';
+    return url;
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
+
 
 
 /**

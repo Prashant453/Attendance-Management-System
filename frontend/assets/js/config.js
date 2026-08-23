@@ -7,7 +7,7 @@ window.ATTENDIFY_CONFIG = {
     // API_BASE_URL: 'https://your-backend.onrender.com/api',
     
     // Left undefined by default so api.js resolves dynamically:
-    API_BASE_URL: undefined,
+    API_BASE_URL: 'https://attendify-backends.onrender.com',
     APP_NAME: 'Attendify',
     VERSION: '2.0.0-production'
 };
