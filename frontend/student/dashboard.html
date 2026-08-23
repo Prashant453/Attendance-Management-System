@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Attendify</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <div class="dashboard-layout" style="grid-template-columns: 1fr; max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem;">
+        <!-- Top Student Header Bar -->
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="brand-logo-icon" style="width: 48px; height: 48px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5z"></path>
+                        <circle cx="12" cy="14" r="2"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <h1 style="font-size: 1.75rem; font-weight: 800;" id="studentWelcome">Welcome, Student</h1>
+                        <span class="brand-badge">Student Portal</span>
+                    </div>
+                    <p style="font-size: 0.875rem; color: var(--text-muted);" id="studentCourseSubtitle">Enrolled in Academic Course</p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="user-profile-card" style="padding: 0.5rem 1rem;">
+                    <div class="avatar" id="studentAvatar">S</div>
+                    <div class="user-meta">
+                        <div class="user-name" id="studentName">Student</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);" id="studentIdDisplay">#STD</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="logout()" style="color: var(--danger);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Exam Eligibility Alert Banner -->
+        <div id="eligibilityBanner" class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--success);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--success-bg); display: flex; align-items: center; justify-content: center; color: var(--success);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700;" id="eligibilityTitle">Exam Eligible (Above 75% Requirement)</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);" id="eligibilitySub">Your attendance is compliant with institutional examination rules.</p>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 1.75rem; font-weight: 800; color: var(--success);" id="topRateNumber">100%</span>
+            </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="stat-grid" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Overall Present Rate</span>
+                    <div class="stat-icon-wrapper" style="background: var(--success-bg); color: var(--success);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                </div>
+                <div class="stat-value" id="overallRate">0%</div>
+                <div class="stat-footer">
+                    <span style="color: var(--text-muted);">Across all registered classes</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Classes Attended</span>
+                    <div class="stat-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    </div>
+                </div>
+                <div class="stat-value" id="attendedClasses">0</div>
+                <div class="stat-footer">
+                    <span style="color: var(--text-muted);" id="totalClassesSub">Out of 0 sessions conducted</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Enrolled Subjects</span>
+                    <div class="stat-icon-wrapper" style="background: rgba(14, 165, 233, 0.1); color: var(--info);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </div>
+                </div>
+                <div class="stat-value" id="subjectCount">0</div>
+                <div class="stat-footer">
+                    <span style="color: var(--text-muted);">Current semester syllabus</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Wise Progress Bars & Recent History -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <!-- Subject Attendance Cards -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <span>Subject Performance Breakdown</span>
+                </h3>
+                <div id="subjectProgressList" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Calculating subject metrics from TiDB...</p>
+                </div>
+            </div>
+
+            <!-- Personal Attendance Log -->
+            <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-size: 1.15rem;">Recent Attendance Logs</h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time Telemetry</span>
+                </div>
+                <div style="flex: 1; overflow-y: auto; max-height: 380px;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentLogs">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No logs found.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script>
+        requireAuth(['student', 'admin']);
+
+        async function loadStudentPortal() {
+            const studentName = localStorage.getItem('full_name') || 'Student';
+            document.getElementById('studentWelcome').textContent = `Welcome, ${studentName}`;
+            document.getElementById('studentName').textContent = studentName;
+            document.getElementById('studentAvatar').textContent = studentName.charAt(0).toUpperCase();
+
+            // Fetch profile & attendance data
+            const profile = await apiRequest('/profile');
+            if (profile && profile.student_id) {
+                document.getElementById('studentIdDisplay').textContent = `#STD-${profile.student_id}`;
+                if (profile.course_name) {
+                    document.getElementById('studentCourseSubtitle').textContent = `Enrolled in: ${profile.course_name}`;
+                }
+            }
+
+            const attendance = await apiRequest('/reports/attendance');
+            const studentId = profile?.student_id || localStorage.getItem('user_id');
+
+            let myLogs = [];
+            if (Array.isArray(attendance)) {
+                myLogs = attendance.filter(a => String(a.student_id) === String(studentId) || a.student_name === studentName);
+            }
+
+            const totalConducted = myLogs.length;
+            const totalPresent = myLogs.filter(a => a.status === 'Present').length;
+            const rate = totalConducted > 0 ? Math.round((totalPresent / totalConducted) * 100) : 100;
+
+            document.getElementById('overallRate').textContent = `${rate}%`;
+            document.getElementById('topRateNumber').textContent = `${rate}%`;
+            document.getElementById('attendedClasses').textContent = totalPresent;
+            document.getElementById('totalClassesSub').textContent = `Out of ${totalConducted} sessions conducted`;
+
+            // Eligibility threshold check
+            const banner = document.getElementById('eligibilityBanner');
+            const elTitle = document.getElementById('eligibilityTitle');
+            const elSub = document.getElementById('eligibilitySub');
+            const topRate = document.getElementById('topRateNumber');
+
+            if (rate < 75) {
+                banner.style.borderLeftColor = 'var(--danger)';
+                elTitle.textContent = 'Attendance Shortage Warning (< 75%)';
+                elTitle.style.color = 'var(--danger)';
+                elSub.textContent = 'You are currently falling below the 75% examination eligibility criteria.';
+                topRate.style.color = 'var(--danger)';
+            }
+
+            // Subject Breakdown
+            const subjectStats = {};
+            myLogs.forEach(log => {
+                if (!subjectStats[log.subject_name]) {
+                    subjectStats[log.subject_name] = { total: 0, present: 0 };
+                }
+                subjectStats[log.subject_name].total++;
+                if (log.status === 'Present') subjectStats[log.subject_name].present++;
+            });
+
+            const subKeys = Object.keys(subjectStats);
+            document.getElementById('subjectCount').textContent = subKeys.length || 0;
+
+            const progressContainer = document.getElementById('subjectProgressList');
+            progressContainer.innerHTML = '';
+
+            if (subKeys.length === 0) {
+                progressContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No class attendance recorded yet.</p>';
+            } else {
+                subKeys.forEach(sub => {
+                    const st = subjectStats[sub];
+                    const subRate = Math.round((st.present / st.total) * 100);
+                    const isGood = subRate >= 75;
+
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <span style="font-weight: 600; font-size: 0.9rem;">${sub}</span>
+                            <span style="font-weight: 700; font-size: 0.85rem; color: ${isGood ? 'var(--success)' : 'var(--danger)'};">${subRate}% (${st.present}/${st.total})</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden;">
+                            <div style="width: ${subRate}%; height: 100%; background: ${isGood ? 'var(--gradient-primary)' : 'var(--danger)'}; border-radius: 999px;"></div>
+                        </div>
+                    `;
+                    progressContainer.appendChild(div);
+                });
+            }
+
+            // Render Logs Table
+            const tbody = document.getElementById('studentLogs');
+            tbody.innerHTML = '';
+
+            if (myLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No recent logs.</td></tr>';
+            } else {
+                myLogs.slice(0, 10).forEach(log => {
+                    const tr = document.createElement('tr');
+                    const isFace = log.method === 'FaceRecognition';
+                    tr.innerHTML = `
+                        <td><span style="font-weight: 500;">${log.subject_name}</span></td>
+                        <td><span style="color: var(--text-muted); font-size: 0.825rem;">${log.date}</span></td>
+                        <td>
+                            <span class="status-pill ${log.status === 'Present' ? 'present' : 'absent'}">
+                                ${log.status === 'Present' ? '● Present' : '✕ Absent'}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <span style="font-size: 0.75rem; color: ${isFace ? 'var(--primary-light)' : 'var(--text-muted)'};">
+                                ${isFace ? '⚡ Face AI' : '✍ Manual'}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        loadStudentPortal();
+    </script>
+</body>
+</html>
+

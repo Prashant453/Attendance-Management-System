@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students - Attendify</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand-header">
+                <div class="brand-logo-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5z"></path>
+                        <circle cx="12" cy="14" r="2"></circle>
+                    </svg>
+                </div>
+                <div class="brand-info">
+                    <h2>Attendify</h2>
+                    <span class="brand-badge">TiDB Cloud</span>
+                </div>
+            </div>
+
+            <div class="nav-group-title">Main Navigation</div>
+            <nav style="flex: 1;">
+                <a href="dashboard.html" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="students.html" class="nav-link active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Manage Students</span>
+                </a>
+                <a href="courses.html" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <span>Courses & Subjects</span>
+                </a>
+                <a href="manual-attendance.html" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    <span>Manual Attendance</span>
+                </a>
+                <a href="face-attendance.html" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>Face Attendance</span>
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    <span>Reports & Analytics</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-card">
+                    <div class="avatar" id="adminAvatar">A</div>
+                    <div class="user-meta">
+                        <div class="user-name" id="adminName">Administrator</div>
+                        <div class="user-role-badge">System Admin</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" onclick="logout()" style="width: 100%; justify-content: flex-start; color: var(--danger); font-size: 0.85rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-title-wrap">
+                    <h1>Student Directory</h1>
+                    <p>Register new students, manage academic enrollments, and capture facial biometric encodings.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="openAddModal">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Student</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Search and Filter Bar -->
+            <div class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.75rem;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 1rem; align-items: center;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <input type="text" id="searchInput" placeholder="Search by student name, email, or username..." style="background: rgba(0,0,0,0.25);">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <select id="courseFilter" style="background: rgba(0,0,0,0.25);">
+                            <option value="">All Academic Courses</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="resetFiltersBtn">Reset</button>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="table-container">
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student Profile</th>
+                            <th>Email Address</th>
+                            <th>Enrolled Course</th>
+                            <th>Biometric Status</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsList">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                                Loading student records from TiDB Cloud...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal" id="addStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Enroll New Student</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Creates a user record and assigns them to a course in TiDB Cloud</p>
+                </div>
+                <button class="modal-close-btn" id="closeAddModal">&times;</button>
+            </div>
+
+            <form id="addStudentForm">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="stdName" placeholder="e.g. Jordan Lee" required>
+                </div>
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="stdUsername" placeholder="e.g. jordan_l" required>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="stdEmail" placeholder="e.g. jordan@student.edu" required>
+                </div>
+                <div class="input-group">
+                    <label>Temporary Password</label>
+                    <input type="password" id="stdPassword" placeholder="Default login password" required value="student123">
+                </div>
+                <div class="input-group">
+                    <label>Course Enrollment</label>
+                    <select id="stdCourse" required>
+                        <option value="">Select Course</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem;">
+                    <button type="button" class="btn btn-secondary" id="cancelAddBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveStudentBtn">Create Student Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Face Biometric Registration Modal -->
+    <div class="modal" id="faceModal">
+        <div class="modal-content" style="max-width: 620px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Capture Facial Biometrics</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="modalStudentName">Enrolling face encoding for student</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeFaceModal()">&times;</button>
+            </div>
+
+            <!-- Viewfinder -->
+            <div class="camera-viewport-card" style="margin-bottom: 1.25rem;">
+                <video id="faceRegVideo" class="camera-video" autoplay playsinline muted></video>
+                <div class="face-target-frame"></div>
+                <div class="scanner-beam" id="enrollScanBeam"></div>
+                <div class="hud-overlay">
+                    <div class="hud-top">
+                        <div class="hud-badge" id="cameraBadge">
+                            <span class="status-dot"></span>
+                            <span>Live Camera</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="faceStatus" style="font-size: 0.9rem; font-weight: 600; text-align: center; min-height: 24px; margin-bottom: 1rem; color: var(--primary-light);">
+                Center the student's face within the oval guide
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closeFaceModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1.5;" id="captureFaceBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>Capture & Register</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/camera.js"></script>
+    <script>
+        requireAuth(['admin']);
+
+        let allStudents = [];
+        let currentStudentRegId = null;
+        const studentCam = new CameraHandler(document.getElementById('faceRegVideo'));
+
+        // Load courses for filters and modal
+        async function loadCourses() {
+            const courses = await apiRequest('/courses');
+            const filterSelect = document.getElementById('courseFilter');
+            const modalSelect = document.getElementById('stdCourse');
+
+            if (Array.isArray(courses)) {
+                courses.forEach(c => {
+                    const opt1 = document.createElement('option');
+                    opt1.value = c.id;
+                    opt1.textContent = c.course_name;
+                    filterSelect.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = c.id;
+                    opt2.textContent = c.course_name;
+                    modalSelect.appendChild(opt2);
+                });
+            }
+        }
+
+        // Render Students List
+        function renderStudents(studentsToRender) {
+            const tbody = document.getElementById('studentsList');
+            tbody.innerHTML = '';
+
+            if (!studentsToRender || studentsToRender.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">No students found matching your criteria.</td></tr>`;
+                return;
+            }
+
+            studentsToRender.forEach(s => {
+                const tr = document.createElement('tr');
+                const hasFace = !!s.face_registered;
+                tr.innerHTML = `
+                    <td><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-muted);">#STD-${s.id}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.85rem;">
+                            <div class="avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">${s.full_name.charAt(0)}</div>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-primary);">${s.full_name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">@${s.username}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span style="color: var(--text-secondary); font-size: 0.875rem;">${s.email}</span></td>
+                    <td>
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary);">${s.course_name}</span>
+                    </td>
+                    <td>
+                        <span class="status-pill ${hasFace ? 'registered' : 'missing'}">
+                            ${hasFace ? '✓ Enrolled' : '⚠ Missing Face'}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-secondary btn-sm" onclick="openFaceModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            <span>${hasFace ? 'Re-enroll' : 'Enroll Face'}</span>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadStudents() {
+            const data = await apiRequest('/students');
+            if (Array.isArray(data)) {
+                allStudents = data;
+                renderStudents(allStudents);
+            }
+        }
+
+        // Search & Filter
+        function applyFilters() {
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+            const courseId = document.getElementById('courseFilter').value;
+
+            const filtered = allStudents.filter(s => {
+                const matchesQuery = !q || s.full_name.toLowerCase().includes(q) || s.username.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || String(s.id).includes(q);
+                const matchesCourse = !courseId || String(s.course_id) === String(courseId);
+                return matchesQuery && matchesCourse;
+            });
+
+            renderStudents(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('courseFilter').addEventListener('change', applyFilters);
+        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('courseFilter').value = '';
+            renderStudents(allStudents);
+        });
+
+        // Add Student Modal Logic
+        const addModal = document.getElementById('addStudentModal');
+        document.getElementById('openAddModal').onclick = () => addModal.classList.add('active');
+        document.getElementById('closeAddModal').onclick = () => addModal.classList.remove('active');
+        document.getElementById('cancelAddBtn').onclick = () => addModal.classList.remove('active');
+
+        // Auto generate username from name
+        document.getElementById('stdName').addEventListener('input', (e) => {
+            const usernameInput = document.getElementById('stdUsername');
+            if (!usernameInput.dataset.manual) {
+                usernameInput.value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            }
+        });
+        document.getElementById('stdUsername').addEventListener('input', () => {
+            document.getElementById('stdUsername').dataset.manual = "true";
+        });
+
+        document.getElementById('addStudentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                username: document.getElementById('stdUsername').value.trim(),
+                password: document.getElementById('stdPassword').value,
+                email: document.getElementById('stdEmail').value.trim(),
+                full_name: document.getElementById('stdName').value.trim(),
+                course_id: document.getElementById('stdCourse').value
+            };
+
+            const btn = document.getElementById('saveStudentBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const res = await apiRequest('/students', 'POST', payload);
+            btn.disabled = false;
+            btn.textContent = 'Create Student Record';
+
+            if (res.id) {
+                showToast(`Student ${payload.full_name} registered successfully!`, 'success');
+                addModal.classList.remove('active');
+                document.getElementById('addStudentForm').reset();
+                loadStudents();
+            } else {
+                showToast(res.message || 'Registration failed', 'error');
+            }
+        };
+
+        // Face Enrollment Modal Logic
+        const faceModal = document.getElementById('faceModal');
+        async function openFaceModal(studentId, name) {
+            currentStudentRegId = studentId;
+            document.getElementById('modalStudentName').textContent = `Enrolling face data for: ${name}`;
+            faceModal.classList.add('active');
+            document.getElementById('faceStatus').textContent = 'Starting camera stream...';
+            document.getElementById('faceStatus').style.color = 'var(--primary-light)';
+
+            const camRes = await studentCam.start();
+            if (camRes.success) {
+                document.getElementById('faceStatus').textContent = "Position face inside oval guide and press Capture";
+            } else {
+                document.getElementById('faceStatus').textContent = camRes.error;
+                document.getElementById('faceStatus').style.color = 'var(--danger)';
+                showToast(camRes.error, 'error');
+            }
+        }
+
+        function closeFaceModal() {
+            studentCam.stop();
+            faceModal.classList.remove('active');
+        }
+
+        document.getElementById('captureFaceBtn').onclick = async () => {
+            if (!studentCam.isActive()) {
+                showToast('Camera is not active', 'warning');
+                return;
+            }
+
+            const status = document.getElementById('faceStatus');
+            const scanBeam = document.getElementById('enrollScanBeam');
+            const captureBtn = document.getElementById('captureFaceBtn');
+
+            scanBeam.style.display = 'block';
+            captureBtn.disabled = true;
+            status.textContent = 'Extracting 128-dimensional face embeddings...';
+            status.style.color = 'var(--info)';
+
+            const frame = studentCam.captureFrame();
+
+            const res = await apiRequest(`/students/${currentStudentRegId}/register-face`, 'POST', { image: frame });
+
+            scanBeam.style.display = 'none';
+            captureBtn.disabled = false;
+
+            if (res.success || res.message.includes('successfully')) {
+                playSuccessChime();
+                showToast('Face biometric enrolled & saved to TiDB Cloud!', 'success');
+                closeFaceModal();
+                loadStudents();
+            } else {
+                status.textContent = res.message || 'No face detected in capture';
+                status.style.color = 'var(--danger)';
+                showToast(res.message || 'Face detection failed', 'error');
+            }
+        };
+
+        // Initialize
+        loadCourses();
+        loadStudents();
+    </script>
+</body>
+</html>
+
