@@ -28,6 +28,10 @@ COPY . .
 # Expose default port
 EXPOSE 5000
 
-# Start Gunicorn server binding to PORT environment variable (Render sets $PORT dynamically)
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120"]
+# Set Python path to find backend modules
+ENV PYTHONPATH=/app/backend:/app:$PYTHONPATH
+
+# Start Gunicorn server binding to PORT environment variable
+CMD ["sh", "-c", "if [ -d 'backend' ]; then gunicorn app:app --chdir backend --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120; else gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120; fi"]
+
 
