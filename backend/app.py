@@ -119,6 +119,9 @@ def login():
         user = query_db("SELECT * FROM users WHERE username = %s", (auth['username'],), one=True)
         
         if user and bcrypt.checkpw(auth['password'].encode('utf8'), user['password'].encode('utf8')):
+            if user.get('is_active') == 0:
+                return jsonify({'message': 'This account has been deactivated by administration. Access denied.'}), 403
+                
             token = jwt.encode({
                 'user_id': user['id'],
                 'username': user['username'],
@@ -144,7 +147,7 @@ def login():
 @app.route('/api/profile', methods=['GET'])
 @token_required
 def get_profile(current_user):
-    user = query_db("SELECT id, username, email, role, full_name, created_at FROM users WHERE id = %s", (current_user['user_id'],), one=True)
+    user = query_db("SELECT id, username, email, role, full_name, is_active, created_at FROM users WHERE id = %s", (current_user['user_id'],), one=True)
     if not user:
         return jsonify({'message': 'User not found'}), 404
     
@@ -163,7 +166,7 @@ def get_profile(current_user):
     return jsonify(user)
 
 
-# ----------------- Student Management -----------------
+# ----------------- Comprehensive Student Management -----------------
 
 @app.route('/api/students', methods=['GET'])
 @token_required
@@ -171,29 +174,95 @@ def get_students(current_user):
     if current_user['role'] not in ['admin', 'teacher']:
         return jsonify({'message': 'Unauthorized'}), 403
     
+    course_id = request.args.get('course_id')
+    status = request.args.get('status') # 'active', 'inactive'
+    
     query = """
         SELECT s.id, s.user_id, u.username, u.email, u.full_name, c.course_name, s.course_id, 
+               COALESCE(s.is_active, 1) as is_active, u.created_at,
                (s.face_encoding IS NOT NULL AND s.face_encoding != '') as face_registered
         FROM students s
         JOIN users u ON s.user_id = u.id
         JOIN courses c ON s.course_id = c.id
-        ORDER BY s.id ASC
+        WHERE 1=1
     """
-    students = query_db(query)
-    # Ensure face_registered is boolean
+    params = []
+    if course_id:
+        query += " AND s.course_id = %s"
+        params.append(course_id)
+    if status == 'active':
+        query += " AND COALESCE(s.is_active, 1) = 1"
+    elif status == 'inactive':
+        query += " AND COALESCE(s.is_active, 1) = 0"
+        
+    query += " ORDER BY s.id ASC"
+    students = query_db(query, tuple(params))
     for s in students:
         s['face_registered'] = bool(s['face_registered'])
+        s['is_active'] = bool(s['is_active'])
     return jsonify(students)
+
+@app.route('/api/students/<int:student_id>', methods=['GET'])
+@token_required
+def get_student_detail(current_user, student_id):
+    if current_user['role'] not in ['admin', 'teacher']:
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    query = """
+        SELECT s.id, s.user_id, u.username, u.email, u.full_name, c.course_name, s.course_id, 
+               COALESCE(s.is_active, 1) as is_active, u.created_at,
+               (s.face_encoding IS NOT NULL AND s.face_encoding != '') as face_registered
+        FROM students s
+        JOIN users u ON s.user_id = u.id
+        JOIN courses c ON s.course_id = c.id
+        WHERE s.id = %s
+    """
+    student = query_db(query, (student_id,), one=True)
+    if not student:
+        return jsonify({'message': 'Student not found'}), 404
+
+    student['face_registered'] = bool(student['face_registered'])
+    student['is_active'] = bool(student['is_active'])
+
+    # Aggregate attendance statistics for this student
+    att_stats = query_db("""
+        SELECT status, COUNT(*) as count 
+        FROM attendance 
+        WHERE student_id = %s 
+        GROUP BY status
+    """, (student_id,))
+
+    present_count = sum(r['count'] for r in att_stats if r['status'] == 'Present')
+    total_classes = sum(r['count'] for r in att_stats)
+    rate = round((present_count / total_classes * 100), 1) if total_classes > 0 else 0.0
+
+    last_session = query_db("""
+        SELECT a.date, a.status, sub.subject_name 
+        FROM attendance a
+        JOIN subjects sub ON a.subject_id = sub.id
+        WHERE a.student_id = %s
+        ORDER BY a.date DESC, a.id DESC LIMIT 1
+    """, (student_id,), one=True)
+
+    student['stats'] = {
+        'total_classes': total_classes,
+        'present_count': present_count,
+        'absent_count': total_classes - present_count,
+        'attendance_percentage': rate,
+        'last_session': last_session
+    }
+
+    return jsonify(student)
 
 @app.route('/api/students', methods=['POST'])
 @token_required
 def register_student(current_user):
     if current_user['role'] != 'admin':
-        return jsonify({'message': 'Unauthorized'}), 403
+        return jsonify({'message': 'Unauthorized. Admin privilege required.'}), 403
     
     data = request.json
     if not data or not data.get('username') or not data.get('password') or not data.get('course_id'):
-        return jsonify({'message': 'Missing required student fields'}), 400
+        return jsonify({'message': 'Missing required student fields (username, password, course_id)'}), 400
 
     hashed_pw = bcrypt.hashpw(data['password'].encode('utf8'), bcrypt.gensalt()).decode('utf8')
     
@@ -201,13 +270,14 @@ def register_student(current_user):
     try:
         with conn.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO users (username, password, email, role, full_name) VALUES (%s, %s, %s, %s, %s)",
+                "INSERT INTO users (username, password, email, role, full_name, is_active) VALUES (%s, %s, %s, %s, %s, 1)",
                 (data['username'], hashed_pw, data.get('email', f"{data['username']}@student.edu"), 'student', data.get('full_name', data['username']))
             )
             user_id = cursor.lastrowid
-            cursor.execute("INSERT INTO students (user_id, course_id) VALUES (%s, %s)", (user_id, data['course_id']))
+            cursor.execute("INSERT INTO students (user_id, course_id, is_active) VALUES (%s, %s, 1)", (user_id, data['course_id']))
             student_id = cursor.lastrowid
-        return jsonify({'message': 'Student registered successfully', 'id': student_id}), 201
+        conn.commit()
+        return jsonify({'message': 'Student created successfully', 'id': student_id}), 201
     except pymysql.err.IntegrityError as err:
         return jsonify({'message': f'Student username or email already exists ({err.args[1]})'}), 400
     except Exception as e:
@@ -215,7 +285,135 @@ def register_student(current_user):
     finally:
         conn.close()
 
+@app.route('/api/students/<int:student_id>', methods=['PUT'])
+@token_required
+def update_student(current_user, student_id):
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Unauthorized. Admin privilege required.'}), 403
+
+    data = request.json
+    if not data:
+        return jsonify({'message': 'Update payload required'}), 400
+
+    student = query_db("SELECT id, user_id FROM students WHERE id = %s", (student_id,), one=True)
+    if not student:
+        return jsonify({'message': 'Student not found'}), 404
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Update users table
+            user_updates = []
+            user_params = []
+            if 'full_name' in data:
+                user_updates.append("full_name = %s")
+                user_params.append(data['full_name'])
+            if 'email' in data:
+                user_updates.append("email = %s")
+                user_params.append(data['email'])
+            if 'username' in data:
+                user_updates.append("username = %s")
+                user_params.append(data['username'])
+            if 'password' in data and data['password']:
+                hashed_pw = bcrypt.hashpw(data['password'].encode('utf8'), bcrypt.gensalt()).decode('utf8')
+                user_updates.append("password = %s")
+                user_params.append(hashed_pw)
+
+            if user_updates:
+                user_params.append(student['user_id'])
+                cursor.execute(f"UPDATE users SET {', '.join(user_updates)} WHERE id = %s", tuple(user_params))
+
+            # Update students table
+            if 'course_id' in data:
+                cursor.execute("UPDATE students SET course_id = %s WHERE id = %s", (data['course_id'], student_id))
+
+        conn.commit()
+        return jsonify({'message': 'Student details updated successfully', 'success': True})
+    except pymysql.err.IntegrityError as err:
+        return jsonify({'message': f'Conflict: Username or email already in use ({err.args[1]})'}), 400
+    except Exception as e:
+        return jsonify({'message': f'Update error: {str(e)}'}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/students/<int:student_id>/status', methods=['PATCH'])
+@token_required
+def toggle_student_status(current_user, student_id):
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Unauthorized. Admin privilege required.'}), 403
+
+    data = request.json
+    if data is None or 'is_active' not in data:
+        return jsonify({'message': 'is_active flag (0 or 1) required'}), 400
+
+    new_status = 1 if data['is_active'] in (1, True, '1', 'true') else 0
+    student = query_db("SELECT id, user_id FROM students WHERE id = %s", (student_id,), one=True)
+    if not student:
+        return jsonify({'message': 'Student not found'}), 404
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE students SET is_active = %s WHERE id = %s", (new_status, student_id))
+            cursor.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_status, student_id))
+        conn.commit()
+        status_text = "activated" if new_status == 1 else "deactivated"
+        return jsonify({
+            'message': f'Student account has been {status_text}. All historical records remain safe.',
+            'is_active': bool(new_status),
+            'success': True
+        })
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/students/<int:student_id>/face', methods=['DELETE'])
+@token_required
+def delete_student_face(current_user, student_id):
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Unauthorized. Admin privilege required.'}), 403
+
+    student = query_db("SELECT id FROM students WHERE id = %s", (student_id,), one=True)
+    if not student:
+        return jsonify({'message': 'Student not found'}), 404
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE students SET face_encoding = NULL WHERE id = %s", (student_id,))
+        conn.commit()
+        return jsonify({'message': 'Facial biometric data removed. Ready for re-enrollment.', 'success': True})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/students/<int:student_id>/attendance', methods=['GET'])
+@token_required
+def get_student_attendance_history(current_user, student_id):
+    if current_user['role'] not in ['admin', 'teacher']:
+        # If student, ensure they only view their own records
+        if current_user['role'] == 'student':
+            res = query_db("SELECT id FROM students WHERE user_id = %s", (current_user['user_id'],), one=True)
+            if not res or res['id'] != student_id:
+                return jsonify({'message': 'Unauthorized to view other student records'}), 403
+
+    query = """
+        SELECT a.id, a.date, a.status, a.method, a.created_at, sub.subject_name, c.course_name,
+               u_teach.full_name as teacher_name
+        FROM attendance a
+        JOIN subjects sub ON a.subject_id = sub.id
+        JOIN courses c ON sub.course_id = c.id
+        LEFT JOIN users u_teach ON a.teacher_id = u_teach.id
+        WHERE a.student_id = %s
+        ORDER BY a.date DESC, a.id DESC
+    """
+    records = query_db(query, (student_id,))
+    return jsonify(records)
+
 # ----------------- Faculty / Teacher Management -----------------
+
 
 @app.route('/api/teachers', methods=['GET', 'POST'])
 @token_required
@@ -337,9 +535,10 @@ def mark_attendance_face_recognition(current_user):
         return jsonify({'message': 'Subject not found'}), 404
     
     known_students = query_db(
-        "SELECT id, face_encoding FROM students WHERE course_id = %s AND face_encoding IS NOT NULL AND face_encoding != ''",
+        "SELECT id, face_encoding FROM students WHERE course_id = %s AND COALESCE(is_active, 1) = 1 AND face_encoding IS NOT NULL AND face_encoding != ''",
         (subject['course_id'],)
     )
+
     
     known_encodings = {}
     for ks in known_students:

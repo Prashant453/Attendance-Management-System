@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Students - Attendify</title>
+    <title>Student Management - Attendify</title>
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,8 +72,8 @@
         <main class="main-content">
             <header class="top-header">
                 <div class="header-title-wrap">
-                    <h1>Student Directory</h1>
-                    <p>Register new students, manage academic enrollments, and capture facial biometric encodings.</p>
+                    <h1>Student Administration</h1>
+                    <p>Register, update, soft-deactivate students, manage 128-D facial biometrics, and audit attendance logs.</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" id="openAddModal">
@@ -83,18 +83,32 @@
                 </div>
             </header>
 
-            <!-- Search and Filter Bar -->
+            <!-- Search and Multi-Filter Bar -->
             <div class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.75rem;">
-                <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 1rem; align-items: center;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 0.85rem; align-items: center;">
                     <div class="input-group" style="margin-bottom: 0;">
-                        <input type="text" id="searchInput" placeholder="Search by student name, email, or username..." style="background: rgba(0,0,0,0.25);">
+                        <input type="text" id="searchInput" placeholder="Search name, username, email, ID..." style="background: rgba(0,0,0,0.25);">
                     </div>
                     <div class="input-group" style="margin-bottom: 0;">
                         <select id="courseFilter" style="background: rgba(0,0,0,0.25);">
                             <option value="">All Academic Courses</option>
                         </select>
                     </div>
-                    <button class="btn btn-secondary btn-sm" id="resetFiltersBtn">Reset</button>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <select id="statusFilter" style="background: rgba(0,0,0,0.25);">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active Only</option>
+                            <option value="inactive">Deactivated Only</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <select id="biometricFilter" style="background: rgba(0,0,0,0.25);">
+                            <option value="">All Biometrics</option>
+                            <option value="enrolled">Face Enrolled</option>
+                            <option value="missing">Pending Scan</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="resetFiltersBtn" title="Reset All Filters">Reset</button>
                 </div>
             </div>
 
@@ -107,13 +121,14 @@
                             <th>Student Profile</th>
                             <th>Email Address</th>
                             <th>Enrolled Course</th>
-                            <th>Biometric Status</th>
-                            <th style="text-align: right;">Actions</th>
+                            <th>Biometrics</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Admin Controls</th>
                         </tr>
                     </thead>
                     <tbody id="studentsList">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
                                 Loading student records from TiDB Cloud...
                             </td>
                         </tr>
@@ -123,13 +138,13 @@
         </main>
     </div>
 
-    <!-- Add Student Modal -->
+    <!-- 1. Add Student Modal -->
     <div class="modal" id="addStudentModal">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
                     <h3 style="font-size: 1.25rem;">Enroll New Student</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">Creates a user record and assigns them to a course in TiDB Cloud</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Creates a user record and assigns them to a degree course in TiDB Cloud</p>
                 </div>
                 <button class="modal-close-btn" id="closeAddModal">&times;</button>
             </div>
@@ -166,7 +181,100 @@
         </div>
     </div>
 
-    <!-- Face Biometric Registration Modal -->
+    <!-- 2. Edit Student Modal -->
+    <div class="modal" id="editStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Edit Student Information</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Update academic credentials or reset password</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('editStudentModal')">&times;</button>
+            </div>
+
+            <form id="editStudentForm">
+                <input type="hidden" id="editStdId">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editStdName" required>
+                </div>
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="editStdUsername" required>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="editStdEmail" required>
+                </div>
+                <div class="input-group">
+                    <label>Course Assignment</label>
+                    <select id="editStdCourse" required></select>
+                </div>
+                <div class="input-group">
+                    <label>Reset Password <span style="font-size: 0.75rem; color: var(--text-muted);">(Leave blank to keep current)</span></label>
+                    <input type="password" id="editStdPassword" placeholder="Enter new password">
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="updateStudentBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Student Profile & Analytics Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content" style="max-width: 580px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Student Profile Overview</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="profileStudentSubtitle">Academic record and attendance metrics</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('profileModal')">&times;</button>
+            </div>
+
+            <div id="profileModalBody" style="padding-top: 0.5rem;">
+                <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading profile...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Individual Attendance History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content" style="max-width: 750px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Student Attendance History</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="historySubtitle">Chronological class attendance records</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('historyModal')">&times;</button>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-top: 1rem;">
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Method</th>
+                            <th>Recorded By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem;">
+                <button class="btn btn-secondary" onclick="closeModal('historyModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Face Biometric Registration Modal -->
     <div class="modal" id="faceModal">
         <div class="modal-content" style="max-width: 620px;">
             <div class="modal-header">
@@ -186,7 +294,7 @@
                     <div class="hud-top">
                         <div class="hud-badge" id="cameraBadge">
                             <span class="status-dot"></span>
-                            <span>Live Camera</span>
+                            <span>Live Camera (Mirrored)</span>
                         </div>
                     </div>
                 </div>
@@ -200,8 +308,25 @@
                 <button class="btn btn-secondary" style="flex: 1;" onclick="closeFaceModal()">Cancel</button>
                 <button class="btn btn-primary" style="flex: 1.5;" id="captureFaceBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                    <span>Capture & Register</span>
+                    <span>Capture & Register Face</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Confirmation Dialog Modal (Destructive / Safety Actions) -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 style="font-size: 1.15rem;" id="confirmTitle">Confirm Action</h3>
+                <button class="modal-close-btn" onclick="closeModal('confirmModal')">&times;</button>
+            </div>
+            <p id="confirmMessage" style="color: var(--text-secondary); margin: 1rem 0 1.5rem; font-size: 0.9rem; line-height: 1.5;">
+                Are you sure you want to proceed with this action?
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
             </div>
         </div>
     </div>
@@ -213,16 +338,28 @@
         requireAuth(['admin']);
 
         let allStudents = [];
+        let allCourses = [];
         let currentStudentRegId = null;
+        let pendingConfirmAction = null;
         const studentCam = new CameraHandler(document.getElementById('faceRegVideo'));
 
-        // Load courses for filters and modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // Load Courses
         async function loadCourses() {
             const courses = await apiRequest('/courses');
             const filterSelect = document.getElementById('courseFilter');
             const modalSelect = document.getElementById('stdCourse');
+            const editSelect = document.getElementById('editStdCourse');
 
             if (Array.isArray(courses)) {
+                allCourses = courses;
                 courses.forEach(c => {
                     const opt1 = document.createElement('option');
                     opt1.value = c.id;
@@ -233,6 +370,11 @@
                     opt2.value = c.id;
                     opt2.textContent = c.course_name;
                     modalSelect.appendChild(opt2);
+
+                    const opt3 = document.createElement('option');
+                    opt3.value = c.id;
+                    opt3.textContent = c.course_name;
+                    editSelect.appendChild(opt3);
                 });
             }
         }
@@ -243,20 +385,22 @@
             tbody.innerHTML = '';
 
             if (!studentsToRender || studentsToRender.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">No students found matching your criteria.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">No students found matching your criteria.</td></tr>`;
                 return;
             }
 
             studentsToRender.forEach(s => {
                 const tr = document.createElement('tr');
                 const hasFace = !!s.face_registered;
+                const isActive = s.is_active !== false && s.is_active !== 0;
+
                 tr.innerHTML = `
                     <td><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-muted);">#STD-${s.id}</span></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 0.85rem;">
-                            <div class="avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">${s.full_name.charAt(0)}</div>
+                            <div class="avatar" style="width: 36px; height: 36px; font-size: 0.85rem; background: ${isActive ? 'var(--primary-gradient)' : 'rgba(255,255,255,0.1)'};">${s.full_name.charAt(0).toUpperCase()}</div>
                             <div>
-                                <div style="font-weight: 600; color: var(--text-primary);">${s.full_name}</div>
+                                <div style="font-weight: 600; color: ${isActive ? 'var(--text-primary)' : 'var(--text-muted)'}; text-decoration: ${isActive ? 'none' : 'line-through'};">${s.full_name}</div>
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">@${s.username}</div>
                             </div>
                         </div>
@@ -267,14 +411,40 @@
                     </td>
                     <td>
                         <span class="status-pill ${hasFace ? 'registered' : 'missing'}">
-                            ${hasFace ? '✓ Enrolled' : '⚠ Missing Face'}
+                            ${hasFace ? '✓ Enrolled' : '⚠ Pending'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-pill ${isActive ? 'success' : 'danger'}">
+                            ${isActive ? 'Active' : 'Deactivated'}
                         </span>
                     </td>
                     <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-sm" onclick="openFaceModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                            <span>${hasFace ? 'Re-enroll' : 'Enroll Face'}</span>
-                        </button>
+                        <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                            <button class="btn btn-ghost btn-sm" onclick="viewStudentProfile(${s.id})" title="View Complete Profile & Stats" style="padding: 0.4rem 0.6rem;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="viewStudentHistory(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')" title="View Attendance History" style="padding: 0.4rem 0.6rem;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="openEditModal(${s.id})" title="Edit Details" style="padding: 0.4rem 0.6rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="openFaceModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')" title="Facial Biometrics Enrollment" style="padding: 0.4rem 0.6rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            </button>
+                            ${hasFace ? `
+                            <button class="btn btn-ghost btn-sm" onclick="confirmClearFace(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')" title="Remove Facial Biometrics" style="color: var(--warning); padding: 0.4rem 0.5rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                            </button>` : ''}
+                            <button class="btn btn-ghost btn-sm" onclick="confirmToggleStatus(${s.id}, '${s.full_name.replace(/'/g, "\\'")}', ${isActive})" title="${isActive ? 'Deactivate Student' : 'Reactivate Student'}" style="color: ${isActive ? 'var(--danger)' : 'var(--success)'}; padding: 0.4rem 0.6rem;">
+                                ${isActive ? `
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                ` : `
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                `}
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -285,19 +455,31 @@
             const data = await apiRequest('/students');
             if (Array.isArray(data)) {
                 allStudents = data;
-                renderStudents(allStudents);
+                applyFilters();
             }
         }
 
-        // Search & Filter
+        // Multi-parameter Filters
         function applyFilters() {
             const q = document.getElementById('searchInput').value.toLowerCase().trim();
             const courseId = document.getElementById('courseFilter').value;
+            const statusVal = document.getElementById('statusFilter').value;
+            const bioVal = document.getElementById('biometricFilter').value;
 
             const filtered = allStudents.filter(s => {
                 const matchesQuery = !q || s.full_name.toLowerCase().includes(q) || s.username.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || String(s.id).includes(q);
                 const matchesCourse = !courseId || String(s.course_id) === String(courseId);
-                return matchesQuery && matchesCourse;
+                
+                let matchesStatus = true;
+                const isActive = s.is_active !== false && s.is_active !== 0;
+                if (statusVal === 'active') matchesStatus = isActive;
+                else if (statusVal === 'inactive') matchesStatus = !isActive;
+
+                let matchesBio = true;
+                if (bioVal === 'enrolled') matchesBio = !!s.face_registered;
+                else if (bioVal === 'missing') matchesBio = !s.face_registered;
+
+                return matchesQuery && matchesCourse && matchesStatus && matchesBio;
             });
 
             renderStudents(filtered);
@@ -305,19 +487,22 @@
 
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('courseFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('biometricFilter').addEventListener('change', applyFilters);
         document.getElementById('resetFiltersBtn').addEventListener('click', () => {
             document.getElementById('searchInput').value = '';
             document.getElementById('courseFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('biometricFilter').value = '';
             renderStudents(allStudents);
         });
 
-        // Add Student Modal Logic
+        // Add Student
         const addModal = document.getElementById('addStudentModal');
         document.getElementById('openAddModal').onclick = () => addModal.classList.add('active');
         document.getElementById('closeAddModal').onclick = () => addModal.classList.remove('active');
         document.getElementById('cancelAddBtn').onclick = () => addModal.classList.remove('active');
 
-        // Auto generate username from name
         document.getElementById('stdName').addEventListener('input', (e) => {
             const usernameInput = document.getElementById('stdUsername');
             if (!usernameInput.dataset.manual) {
@@ -340,14 +525,14 @@
 
             const btn = document.getElementById('saveStudentBtn');
             btn.disabled = true;
-            btn.textContent = 'Saving...';
+            btn.textContent = 'Saving to TiDB Cloud...';
 
             const res = await apiRequest('/students', 'POST', payload);
             btn.disabled = false;
             btn.textContent = 'Create Student Record';
 
             if (res.id) {
-                showToast(`Student ${payload.full_name} registered successfully!`, 'success');
+                showToast(`Student ${payload.full_name} enrolled successfully!`, 'success');
                 addModal.classList.remove('active');
                 document.getElementById('addStudentForm').reset();
                 loadStudents();
@@ -356,18 +541,206 @@
             }
         };
 
-        // Face Enrollment Modal Logic
+        // Edit Student Details
+        async function openEditModal(studentId) {
+            const student = allStudents.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('editStdId').value = student.id;
+            document.getElementById('editStdName').value = student.full_name;
+            document.getElementById('editStdUsername').value = student.username;
+            document.getElementById('editStdEmail').value = student.email;
+            document.getElementById('editStdCourse').value = student.course_id;
+            document.getElementById('editStdPassword').value = '';
+
+            openModal('editStudentModal');
+        }
+
+        document.getElementById('editStudentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const studentId = document.getElementById('editStdId').value;
+            const payload = {
+                full_name: document.getElementById('editStdName').value.trim(),
+                username: document.getElementById('editStdUsername').value.trim(),
+                email: document.getElementById('editStdEmail').value.trim(),
+                course_id: document.getElementById('editStdCourse').value,
+            };
+            const pw = document.getElementById('editStdPassword').value;
+            if (pw) payload.password = pw;
+
+            const btn = document.getElementById('updateStudentBtn');
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            const res = await apiRequest(`/students/${studentId}`, 'PUT', payload);
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+
+            if (res.success) {
+                showToast('Student information updated successfully!', 'success');
+                closeModal('editStudentModal');
+                loadStudents();
+            } else {
+                showToast(res.message || 'Update failed', 'error');
+            }
+        };
+
+        // View Student Profile Modal
+        async function viewStudentProfile(studentId) {
+            openModal('profileModal');
+            const body = document.getElementById('profileModalBody');
+            body.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading profile data...</div>`;
+
+            const s = await apiRequest(`/students/${studentId}`);
+            if (!s || s.message) {
+                body.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 2rem;">Failed to load profile.</div>`;
+                return;
+            }
+
+            document.getElementById('profileStudentSubtitle').textContent = `${s.full_name} • #STD-${s.id}`;
+            const stats = s.stats || {};
+            const rate = stats.attendance_percentage || 0;
+            const rateColor = rate >= 75 ? 'var(--success)' : (rate >= 50 ? 'var(--warning)' : 'var(--danger)');
+
+            body.innerHTML = `
+                <div style="display: flex; gap: 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle);">
+                    <div class="avatar" style="width: 58px; height: 58px; font-size: 1.4rem; background: var(--primary-gradient);">${s.full_name.charAt(0).toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.2rem;">${s.full_name}</h3>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">@${s.username} • ${s.email}</div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                            <span class="status-pill" style="background: rgba(99, 102, 241, 0.1); color: var(--primary-light);">${s.course_name}</span>
+                            <span class="status-pill ${s.is_active ? 'success' : 'danger'}">${s.is_active ? 'Active Account' : 'Deactivated'}</span>
+                            <span class="status-pill ${s.face_registered ? 'registered' : 'missing'}">${s.face_registered ? 'Biometrics Active' : 'No Face Vector'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; margin-bottom: 1.5rem;">
+                    <div class="glass-card" style="padding: 1rem; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Sessions</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem;">${stats.total_classes || 0}</div>
+                    </div>
+                    <div class="glass-card" style="padding: 1rem; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Classes Present</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success); margin-top: 0.25rem;">${stats.present_count || 0}</div>
+                    </div>
+                    <div class="glass-card" style="padding: 1rem; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Attendance Rate</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: ${rateColor}; margin-top: 0.25rem;">${rate}%</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Recent Activity</div>
+                    ${stats.last_session ? `
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                        <span>Last Attended: <strong>${stats.last_session.subject_name}</strong></span>
+                        <span class="status-pill ${stats.last_session.status === 'Present' ? 'success' : 'danger'}">${stats.last_session.status} (${stats.last_session.date})</span>
+                    </div>
+                    ` : `<div style="font-size: 0.85rem; color: var(--text-muted);">No attendance sessions logged yet.</div>`}
+                </div>
+            `;
+        }
+
+        // View Individual Attendance History
+        async function viewStudentHistory(studentId, studentName) {
+            document.getElementById('historySubtitle').textContent = `Attendance audit log for: ${studentName}`;
+            openModal('historyModal');
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading logs from TiDB Cloud...</td></tr>`;
+
+            const history = await apiRequest(`/students/${studentId}/attendance`);
+            tbody.innerHTML = '';
+
+            if (Array.isArray(history) && history.length > 0) {
+                history.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">${h.date}</span></td>
+                        <td><span style="font-weight: 600;">${h.subject_name}</span></td>
+                        <td>
+                            <span class="status-pill ${h.status === 'Present' ? 'success' : 'danger'}">${h.status}</span>
+                        </td>
+                        <td>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">${h.method || 'Manual'}</span>
+                        </td>
+                        <td>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">${h.teacher_name || 'System Admin'}</span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No attendance records found for this student.</td></tr>`;
+            }
+        }
+
+        // Soft Deactivation / Reactivation
+        function confirmToggleStatus(studentId, studentName, isCurrentlyActive) {
+            const actionText = isCurrentlyActive ? 'Deactivate' : 'Reactivate';
+            document.getElementById('confirmTitle').textContent = `${actionText} Student Account`;
+            document.getElementById('confirmMessage').innerHTML = isCurrentlyActive 
+                ? `Are you sure you want to <strong>deactivate</strong> <strong>${studentName}</strong>?<br><br>• Student will be barred from logging in.<br>• Excluded from live face attendance scans.<br>• <strong>Historical attendance data remains 100% safe.</strong>`
+                : `Are you sure you want to <strong>reactivate</strong> <strong>${studentName}</strong>?<br><br>The student will immediately regain access to the portal and active attendance scans.`;
+            
+            const btn = document.getElementById('confirmActionBtn');
+            btn.className = isCurrentlyActive ? 'btn btn-danger' : 'btn btn-success';
+            btn.textContent = `${actionText} Student`;
+
+            pendingConfirmAction = async () => {
+                const res = await apiRequest(`/students/${studentId}/status`, 'PATCH', { is_active: isCurrentlyActive ? 0 : 1 });
+                closeModal('confirmModal');
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    loadStudents();
+                } else {
+                    showToast(res.message || 'Action failed', 'error');
+                }
+            };
+
+            openModal('confirmModal');
+        }
+
+        // Clear Facial Data
+        function confirmClearFace(studentId, studentName) {
+            document.getElementById('confirmTitle').textContent = 'Remove Facial Biometric Vector';
+            document.getElementById('confirmMessage').innerHTML = `Are you sure you want to delete the registered face data for <strong>${studentName}</strong>?<br><br>The 128-dimensional embedding will be cleared from TiDB Cloud, allowing fresh re-enrollment.`;
+            
+            const btn = document.getElementById('confirmActionBtn');
+            btn.className = 'btn btn-danger';
+            btn.textContent = 'Remove Face Biometrics';
+
+            pendingConfirmAction = async () => {
+                const res = await apiRequest(`/students/${studentId}/face`, 'DELETE');
+                closeModal('confirmModal');
+                if (res.success) {
+                    showToast('Facial biometric data removed successfully', 'success');
+                    loadStudents();
+                } else {
+                    showToast(res.message || 'Action failed', 'error');
+                }
+            };
+
+            openModal('confirmModal');
+        }
+
+        document.getElementById('confirmActionBtn').onclick = () => {
+            if (pendingConfirmAction) pendingConfirmAction();
+        };
+
+        // Face Enrollment Modal
         const faceModal = document.getElementById('faceModal');
         async function openFaceModal(studentId, name) {
             currentStudentRegId = studentId;
-            document.getElementById('modalStudentName').textContent = `Enrolling face data for: ${name}`;
+            document.getElementById('modalStudentName').textContent = `Enrolling face biometrics for: ${name}`;
             faceModal.classList.add('active');
-            document.getElementById('faceStatus').textContent = 'Starting camera stream...';
+            document.getElementById('faceStatus').textContent = 'Starting selfie camera stream...';
             document.getElementById('faceStatus').style.color = 'var(--primary-light)';
 
             const camRes = await studentCam.start();
             if (camRes.success) {
-                document.getElementById('faceStatus').textContent = "Position face inside oval guide and press Capture";
+                document.getElementById('faceStatus').textContent = "Position student's face inside the oval guide and press Capture";
             } else {
                 document.getElementById('faceStatus').textContent = camRes.error;
                 document.getElementById('faceStatus').style.color = 'var(--danger)';
@@ -402,7 +775,7 @@
             scanBeam.style.display = 'none';
             captureBtn.disabled = false;
 
-            if (res.success || res.message.includes('successfully')) {
+            if (res.success || (res.message && res.message.includes('successfully'))) {
                 playSuccessChime();
                 showToast('Face biometric enrolled & saved to TiDB Cloud!', 'success');
                 closeFaceModal();
@@ -420,4 +793,5 @@
     </script>
 </body>
 </html>
+
 

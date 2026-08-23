@@ -74,33 +74,156 @@ def manage_students(current_user):
         if current_user['role'] != 'admin':
             return jsonify({'message': 'Unauthorized'}), 403
         data = request.json
+        if not data or not data.get('username') or not data.get('password') or not data.get('course_id'):
+            return jsonify({'message': 'Missing required student fields'}), 400
         hashed_pw = bcrypt.hashpw(data['password'].encode('utf8'), bcrypt.gensalt()).decode('utf8')
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("INSERT INTO users (username, password, email, role, full_name) VALUES (%s, %s, %s, %s, %s)",
-                            (data['username'], hashed_pw, data['email'], 'student', data['full_name']))
+                cur.execute("INSERT INTO users (username, password, email, role, full_name, is_active) VALUES (%s, %s, %s, %s, %s, 1)",
+                            (data['username'], hashed_pw, data.get('email', f"{data['username']}@student.edu"), 'student', data.get('full_name', data['username'])))
                 user_id = cur.lastrowid
-                cur.execute("INSERT INTO students (user_id, course_id) VALUES (%s, %s)", (user_id, data['course_id']))
+                cur.execute("INSERT INTO students (user_id, course_id, is_active) VALUES (%s, %s, 1)", (user_id, data['course_id']))
                 student_id = cur.lastrowid
-            return jsonify({'message': 'Student registered', 'id': student_id}), 201
+            conn.commit()
+            return jsonify({'message': 'Student created successfully', 'id': student_id}), 201
         except Exception as e:
             return jsonify({'message': str(e)}), 400
         finally:
             conn.close()
     
+    course_id = request.args.get('course_id')
+    status = request.args.get('status')
+    
     query = """
         SELECT s.id, s.user_id, u.username, u.email, u.full_name, c.course_name, s.course_id, 
+               COALESCE(s.is_active, 1) as is_active, u.created_at,
                (s.face_encoding IS NOT NULL AND s.face_encoding != '') as face_registered 
         FROM students s 
         JOIN users u ON s.user_id = u.id 
         JOIN courses c ON s.course_id = c.id
-        ORDER BY s.id ASC
+        WHERE 1=1
     """
-    students = query_db(query)
+    params = []
+    if course_id:
+        query += " AND s.course_id = %s"
+        params.append(course_id)
+    if status == 'active':
+        query += " AND COALESCE(s.is_active, 1) = 1"
+    elif status == 'inactive':
+        query += " AND COALESCE(s.is_active, 1) = 0"
+        
+    query += " ORDER BY s.id ASC"
+    students = query_db(query, tuple(params))
     for s in students:
         s['face_registered'] = bool(s['face_registered'])
+        s['is_active'] = bool(s['is_active'])
     return jsonify(students)
+
+@app.route('/api/students/<int:student_id>', methods=['GET', 'PUT'])
+@token_required
+def single_student(current_user, student_id):
+    if current_user['role'] not in ['admin', 'teacher']:
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    if request.method == 'PUT':
+        if current_user['role'] != 'admin':
+            return jsonify({'message': 'Unauthorized'}), 403
+        data = request.json
+        student = query_db("SELECT id, user_id FROM students WHERE id = %s", (student_id,), one=True)
+        if not student:
+            return jsonify({'message': 'Student not found'}), 404
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                user_updates, user_params = [], []
+                if 'full_name' in data: user_updates.append("full_name = %s"); user_params.append(data['full_name'])
+                if 'email' in data: user_updates.append("email = %s"); user_params.append(data['email'])
+                if 'username' in data: user_updates.append("username = %s"); user_params.append(data['username'])
+                if 'password' in data and data['password']:
+                    user_updates.append("password = %s")
+                    user_params.append(bcrypt.hashpw(data['password'].encode('utf8'), bcrypt.gensalt()).decode('utf8'))
+                if user_updates:
+                    user_params.append(student['user_id'])
+                    cur.execute(f"UPDATE users SET {', '.join(user_updates)} WHERE id = %s", tuple(user_params))
+                if 'course_id' in data:
+                    cur.execute("UPDATE students SET course_id = %s WHERE id = %s", (data['course_id'], student_id))
+            conn.commit()
+            return jsonify({'message': 'Updated successfully', 'success': True})
+        except Exception as e:
+            return jsonify({'message': str(e)}), 400
+        finally:
+            conn.close()
+
+    query = """
+        SELECT s.id, s.user_id, u.username, u.email, u.full_name, c.course_name, s.course_id, 
+               COALESCE(s.is_active, 1) as is_active, u.created_at,
+               (s.face_encoding IS NOT NULL AND s.face_encoding != '') as face_registered
+        FROM students s JOIN users u ON s.user_id = u.id JOIN courses c ON s.course_id = c.id WHERE s.id = %s
+    """
+    student = query_db(query, (student_id,), one=True)
+    if not student:
+        return jsonify({'message': 'Student not found'}), 404
+    student['face_registered'] = bool(student['face_registered'])
+    student['is_active'] = bool(student['is_active'])
+
+    att_stats = query_db("SELECT status, COUNT(*) as count FROM attendance WHERE student_id = %s GROUP BY status", (student_id,))
+    present_count = sum(r['count'] for r in att_stats if r['status'] == 'Present')
+    total_classes = sum(r['count'] for r in att_stats)
+    rate = round((present_count / total_classes * 100), 1) if total_classes > 0 else 0.0
+
+    student['stats'] = {
+        'total_classes': total_classes,
+        'present_count': present_count,
+        'absent_count': total_classes - present_count,
+        'attendance_percentage': rate
+    }
+    return jsonify(student)
+
+@app.route('/api/students/<int:student_id>/status', methods=['PATCH'])
+@token_required
+def toggle_status(current_user, student_id):
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Unauthorized'}), 403
+    data = request.json
+    new_status = 1 if data.get('is_active') in (1, True, '1', 'true') else 0
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE students SET is_active = %s WHERE id = %s", (new_status, student_id))
+            cur.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_status, student_id))
+        conn.commit()
+        return jsonify({'message': 'Status updated', 'is_active': bool(new_status), 'success': True})
+    finally:
+        conn.close()
+
+@app.route('/api/students/<int:student_id>/face', methods=['DELETE'])
+@token_required
+def clear_face(current_user, student_id):
+    if current_user['role'] != 'admin':
+        return jsonify({'message': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE students SET face_encoding = NULL WHERE id = %s", (student_id,))
+        conn.commit()
+        return jsonify({'message': 'Face data removed', 'success': True})
+    finally:
+        conn.close()
+
+@app.route('/api/students/<int:student_id>/attendance', methods=['GET'])
+@token_required
+def student_history(current_user, student_id):
+    query = """
+        SELECT a.id, a.date, a.status, a.method, a.created_at, sub.subject_name, c.course_name, u.full_name as teacher_name
+        FROM attendance a
+        JOIN subjects sub ON a.subject_id = sub.id
+        JOIN courses c ON sub.course_id = c.id
+        LEFT JOIN users u ON a.teacher_id = u.id
+        WHERE a.student_id = %s ORDER BY a.date DESC, a.id DESC
+    """
+    return jsonify(query_db(query, (student_id,)))
+
 
 @app.route('/api/students/<int:student_id>/register-face', methods=['POST'])
 @token_required

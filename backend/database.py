@@ -72,6 +72,7 @@ def init_db():
                 email VARCHAR(150) UNIQUE NOT NULL,
                 role VARCHAR(50) NOT NULL,
                 full_name VARCHAR(150) NOT NULL,
+                is_active TINYINT(1) DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
@@ -101,10 +102,22 @@ def init_db():
                 user_id INT NOT NULL,
                 course_id INT NOT NULL,
                 face_encoding LONGTEXT,
+                is_active TINYINT(1) DEFAULT 1,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
+
+            # Auto-migrate is_active columns for existing tables
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN is_active TINYINT(1) DEFAULT 1;")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE students ADD COLUMN is_active TINYINT(1) DEFAULT 1;")
+            except Exception:
+                pass
+
 
             # Attendance table
             cursor.execute("""
