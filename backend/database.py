@@ -21,8 +21,19 @@ DB_PASSWORD = os.getenv('DB_PASSWORD', 'jWBZIi1sWAV6dWpx')
 DB_NAME = os.getenv('DB_NAME', 'attendance_db')
 DB_SSL = os.getenv('DB_SSL', 'true').lower() in ('true', '1', 'yes')
 
+_cached_db_conn = None
+
 def get_db_connection(use_db=True, max_retries=3):
-    """Establishes a secure TLS/SSL connection to TiDB Cloud with retry resilience."""
+    """Establishes or reuses a high-performance TLS connection to TiDB Cloud."""
+    global _cached_db_conn
+    
+    if use_db and _cached_db_conn is not None:
+        try:
+            _cached_db_conn.ping(reconnect=True)
+            return _cached_db_conn
+        except Exception:
+            _cached_db_conn = None
+
     ssl_config = {'ca': certifi.where()} if DB_SSL else None
     
     for attempt in range(1, max_retries + 1):
@@ -36,19 +47,22 @@ def get_db_connection(use_db=True, max_retries=3):
                 ssl=ssl_config,
                 cursorclass=pymysql.cursors.DictCursor,
                 autocommit=True,
-                connect_timeout=15,
+                connect_timeout=10,
                 read_timeout=15,
                 write_timeout=15,
                 charset='utf8mb4'
             )
+            if use_db:
+                _cached_db_conn = conn
             return conn
         except pymysql.MySQLError as err:
             logger.warning(f"TiDB Cloud connection attempt {attempt}/{max_retries} failed: {err}")
             if attempt < max_retries:
-                time.sleep(1.5)
+                time.sleep(1.0)
             else:
                 logger.error(f"Failed to connect to TiDB Cloud at {DB_HOST}:{DB_PORT} after {max_retries} attempts.")
                 raise
+
 
 
 def init_db():

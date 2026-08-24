@@ -34,16 +34,14 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
     return response
 
-# Helper to run dictionary queries in TiDB Cloud
+# Helper to run dictionary queries in TiDB Cloud with connection reuse
 def query_db(query, args=(), one=False):
     conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(query, args)
-            rv = cur.fetchall()
-            return (rv[0] if rv else None) if one else rv
-    finally:
-        conn.close()
+    with conn.cursor() as cur:
+        cur.execute(query, args)
+        rv = cur.fetchall()
+        return (rv[0] if rv else None) if one else rv
+
 
 # JWT Authentication Decorator
 def token_required(f):
@@ -494,6 +492,27 @@ def mark_attendance_manual(current_user):
     if not data or not data.get('student_id') or not data.get('subject_id') or not data.get('date'):
         return jsonify({'message': 'Missing required fields: student_id, subject_id, date'}), 400
 
+    # Strict Program/Course-Based Attendance Enforcement
+    enrollment = query_db("""
+        SELECT s.id as student_id, s.course_id as student_course_id,
+               sub.id as subject_id, sub.course_id as subject_course_id,
+               c_std.course_name as student_program, c_sub.course_name as subject_program
+        FROM students s
+        JOIN courses c_std ON s.course_id = c_std.id
+        JOIN subjects sub ON sub.id = %s
+        JOIN courses c_sub ON sub.course_id = c_sub.id
+        WHERE s.id = %s
+    """, (data['subject_id'], data['student_id']), one=True)
+
+    if not enrollment:
+        return jsonify({'message': 'Invalid student or subject ID.'}), 404
+
+    if enrollment['student_course_id'] != enrollment['subject_course_id']:
+        return jsonify({
+            'message': f"Academic Program Mismatch: Student is enrolled in '{enrollment['student_program']}', but this subject is offered under '{enrollment['subject_program']}'. Cross-program attendance is not permitted.",
+            'error_code': 'PROGRAM_MISMATCH'
+        }), 400
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -517,8 +536,7 @@ def mark_attendance_manual(current_user):
         return jsonify({'message': 'Attendance marked successfully', 'status': data.get('status', 'Present')})
     except Exception as e:
         return jsonify({'message': str(e)}), 500
-    finally:
-        conn.close()
+
 
 @app.route('/api/attendance/face-recognition', methods=['POST'])
 @token_required

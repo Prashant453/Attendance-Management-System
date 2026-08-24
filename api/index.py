@@ -249,6 +249,29 @@ def register_face(current_user, student_id):
 @token_required
 def mark_attendance_manual(current_user):
     data = request.json
+    if not data or not data.get('student_id') or not data.get('subject_id') or not data.get('date'):
+        return jsonify({'message': 'Missing required fields: student_id, subject_id, date'}), 400
+
+    enrollment = query_db("""
+        SELECT s.id as student_id, s.course_id as student_course_id,
+               sub.id as subject_id, sub.course_id as subject_course_id,
+               c_std.course_name as student_program, c_sub.course_name as subject_program
+        FROM students s
+        JOIN courses c_std ON s.course_id = c_std.id
+        JOIN subjects sub ON sub.id = %s
+        JOIN courses c_sub ON sub.course_id = c_sub.id
+        WHERE s.id = %s
+    """, (data['subject_id'], data['student_id']), one=True)
+
+    if not enrollment:
+        return jsonify({'message': 'Invalid student or subject ID.'}), 404
+
+    if enrollment['student_course_id'] != enrollment['subject_course_id']:
+        return jsonify({
+            'message': f"Academic Program Mismatch: Student is enrolled in '{enrollment['student_program']}', but this subject is offered under '{enrollment['subject_program']}'. Cross-program attendance is not permitted.",
+            'error_code': 'PROGRAM_MISMATCH'
+        }), 400
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -261,9 +284,11 @@ def mark_attendance_manual(current_user):
             else: 
                 cur.execute("INSERT INTO attendance (student_id, subject_id, teacher_id, date, status, method) VALUES (%s, %s, %s, %s, %s, %s)", 
                             (data['student_id'], data['subject_id'], current_user['user_id'], data['date'], data['status'], 'Manual'))
-        return jsonify({'message': 'Attendance marked'})
+        conn.commit()
+        return jsonify({'message': 'Attendance marked successfully', 'status': data['status']})
     finally:
         conn.close()
+
 
 @app.route('/api/attendance/face-recognition', methods=['POST'])
 @token_required
