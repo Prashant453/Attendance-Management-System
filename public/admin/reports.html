@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports & Attendance Audit - Attendify</title>
+    <title>Reports & Telemetry Audit - Attendify</title>
     <link rel="icon" type="image/svg+xml" href="../assets/img/logo.svg">
     <link rel="alternate icon" type="image/png" href="../assets/img/favicon.png">
     <link rel="shortcut icon" href="../favicon.ico">
@@ -21,7 +21,7 @@
                 </div>
                 <div class="brand-info">
                     <h2>Attendify</h2>
-                    <span class="brand-badge">Biometric Attendance</span>
+                    <span class="brand-badge">AI Biometric System</span>
                 </div>
             </div>
 
@@ -72,8 +72,8 @@
         <main class="main-content">
             <header class="top-header">
                 <div class="header-title-wrap">
-                    <h1>Attendance Reports & Telemetry</h1>
-                    <p>Filter, inspect, and export comprehensive institutional attendance records from TiDB Cloud.</p>
+                    <h1>Attendance Reports & Telemetry Audit</h1>
+                    <p>Comprehensive attendance records, multi-face session logs, and AI anti-spoofing security analytics.</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" id="exportBtn">
@@ -83,75 +83,148 @@
                 </div>
             </header>
 
-            <!-- Filters Bar -->
-            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: flex-end;">
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label>Filter Subject</label>
-                        <select id="subjectFilter">
-                            <option value="">All Subjects</option>
-                        </select>
+            <!-- Navigation Tabs -->
+            <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <button class="tab-btn active" id="tabAttendance" onclick="switchTab('attendance')" style="padding: 0.75rem 1.25rem; font-weight: 600; border: none; background: none; border-bottom: 2px solid var(--primary); color: var(--text-primary); cursor: pointer;">
+                    📋 Attendance Logs
+                </button>
+                <button class="tab-btn" id="tabSecurity" onclick="switchTab('security')" style="padding: 0.75rem 1.25rem; font-weight: 600; border: none; background: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer;">
+                    🛡️ Suspicious & Anti-Spoofing Audit
+                </button>
+            </div>
+
+            <!-- Attendance Tab Content -->
+            <div id="attendanceTabSection">
+                <!-- Filters Bar -->
+                <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Search Student</label>
+                            <input type="text" id="searchFilter" placeholder="Name or ID...">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Filter Subject</label>
+                            <select id="subjectFilter">
+                                <option value="">All Subjects</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Start Date</label>
+                            <input type="date" id="startDateFilter">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>End Date</label>
+                            <input type="date" id="endDateFilter">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="Present">Present Only</option>
+                                <option value="Absent">Absent Only</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Method</label>
+                            <select id="methodFilter">
+                                <option value="">All Methods</option>
+                                <option value="FaceRecognition">Face Biometrics</option>
+                                <option value="Manual">Manual Entry</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary" id="applyFiltersBtn" style="flex: 1;">Filter</button>
+                            <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                        </div>
                     </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label>Filter Date</label>
-                        <input type="date" id="dateFilter">
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.75rem;">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Matching Logs</span>
+                        </div>
+                        <div class="stat-value" id="totalRecords">0</div>
                     </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label>Status</label>
-                        <select id="statusFilter">
-                            <option value="">All Statuses</option>
-                            <option value="Present">Present Only</option>
-                            <option value="Absent">Absent Only</option>
-                        </select>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Present Logs</span>
+                        </div>
+                        <div class="stat-value" id="presentRecords" style="color: var(--success);">0</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Present Rate</span>
+                        </div>
+                        <div class="stat-value" id="presentRate">0%</div>
+                    </div>
+                </div>
+
+                <!-- Report Table -->
+                <div class="table-container">
+                    <table id="reportTable">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Student Profile</th>
+                                <th>Subject</th>
+                                <th>Date & Time</th>
+                                <th>Session ID</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Capture Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportRows">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">Loading records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 0.5rem 1rem;">
+                    <span id="pageInfo" style="font-size: 0.875rem; color: var(--text-muted);">Page 1 of 1 (0 items)</span>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-primary" id="applyFiltersBtn" style="flex: 1;">Filter</button>
-                        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button class="btn btn-secondary" id="prevPageBtn" disabled>Previous</button>
+                        <button class="btn btn-secondary" id="nextPageBtn" disabled>Next</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Bar -->
-            <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.75rem;">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Matching Logs</span>
+            <!-- Security & Anti-Spoofing Tab Content -->
+            <div id="securityTabSection" style="display: none;">
+                <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin-bottom: 0.25rem;">🛡️ Anomaly & Liveness Failure Log</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Real-time audit log of photo spoof attempts, duplicate scans, and anomalous scan activities.</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="loadSecurityLogs()">🔄 Refresh Audit</button>
                     </div>
-                    <div class="stat-value" id="totalRecords">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Present Logs</span>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Incident ID</th>
+                                    <th>Type</th>
+                                    <th>Student</th>
+                                    <th>Subject / Session</th>
+                                    <th>Details</th>
+                                    <th>Timestamp</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="securityRows">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">Loading security logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="stat-value" id="presentRecords" style="color: var(--success);">0</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-title">Present Percentage</span>
-                    </div>
-                    <div class="stat-value" id="presentRate">0%</div>
-                </div>
-            </div>
-
-            <!-- Report Table -->
-            <div class="table-container">
-                <table id="reportTable">
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Student Profile</th>
-                            <th>Subject</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th style="text-align: right;">Capture Method</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportRows">
-                        <tr>
-                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">Loading records...</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </main>
     </div>
@@ -162,6 +235,34 @@
         requireAuth(['admin', 'teacher']);
 
         let currentData = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let activeTab = 'attendance';
+
+        function switchTab(tab) {
+            activeTab = tab;
+            const tabAtt = document.getElementById('tabAttendance');
+            const tabSec = document.getElementById('tabSecurity');
+            const secAtt = document.getElementById('attendanceTabSection');
+            const secSec = document.getElementById('securityTabSection');
+
+            if (tab === 'attendance') {
+                tabAtt.style.borderBottomColor = 'var(--primary)';
+                tabAtt.style.color = 'var(--text-primary)';
+                tabSec.style.borderBottomColor = 'transparent';
+                tabSec.style.color = 'var(--text-muted)';
+                secAtt.style.display = 'block';
+                secSec.style.display = 'none';
+            } else {
+                tabSec.style.borderBottomColor = 'var(--primary)';
+                tabSec.style.color = 'var(--text-primary)';
+                tabAtt.style.borderBottomColor = 'transparent';
+                tabAtt.style.color = 'var(--text-muted)';
+                secAtt.style.display = 'none';
+                secSec.style.display = 'block';
+                loadSecurityLogs();
+            }
+        }
 
         async function init() {
             const subjects = await apiRequest('/subjects');
@@ -174,56 +275,70 @@
                     select.appendChild(opt);
                 });
             }
-            loadData();
+            loadData(1);
         }
 
-        async function loadData() {
+        async function loadData(page = 1) {
+            currentPage = page;
+            const search = document.getElementById('searchFilter').value.trim();
             const subjectId = document.getElementById('subjectFilter').value;
-            const date = document.getElementById('dateFilter').value;
+            const startDate = document.getElementById('startDateFilter').value;
+            const endDate = document.getElementById('endDateFilter').value;
             const status = document.getElementById('statusFilter').value;
+            const method = document.getElementById('methodFilter').value;
 
-            let endpoint = '/reports/attendance?';
-            if (subjectId) endpoint += `subject_id=${subjectId}&`;
-            if (date) endpoint += `date=${date}&`;
+            let query = `?page=${page}&limit=25`;
+            if (search) query += `&search=${encodeURIComponent(search)}`;
+            if (subjectId) query += `&subject_id=${encodeURIComponent(subjectId)}`;
+            if (startDate) query += `&start_date=${encodeURIComponent(startDate)}`;
+            if (endDate) query += `&end_date=${encodeURIComponent(endDate)}`;
+            if (status) query += `&status=${encodeURIComponent(status)}`;
+            if (method) query += `&method=${encodeURIComponent(method)}`;
 
-            const data = await apiRequest(endpoint);
+            const res = await apiRequest(`/reports/attendance-advanced${query}`);
             const tbody = document.getElementById('reportRows');
             tbody.innerHTML = '';
 
-            if (Array.isArray(data)) {
-                let filtered = data;
-                if (status) {
-                    filtered = filtered.filter(item => item.status === status);
-                }
-                currentData = filtered;
+            if (res && res.data) {
+                currentData = res.data;
+                const pagination = res.pagination || {};
+                totalPages = pagination.total_pages || 1;
 
-                // Update summary stats
-                const total = filtered.length;
-                const presents = filtered.filter(d => d.status === 'Present').length;
+                document.getElementById('totalRecords').textContent = pagination.total_records || currentData.length;
+                
+                // Calculate present stats from loaded dataset or summary
+                const presents = currentData.filter(d => d.status === 'Present').length;
+                const total = currentData.length;
                 const rate = total > 0 ? Math.round((presents / total) * 100) : 0;
-
-                document.getElementById('totalRecords').textContent = total;
                 document.getElementById('presentRecords').textContent = presents;
                 document.getElementById('presentRate').textContent = `${rate}%`;
 
-                if (filtered.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">No attendance records found matching filters.</td></tr>`;
+                document.getElementById('pageInfo').textContent = `Page ${pagination.page || 1} of ${totalPages} (${pagination.total_records || 0} records)`;
+                document.getElementById('prevPageBtn').disabled = (pagination.page || 1) <= 1;
+                document.getElementById('nextPageBtn').disabled = (pagination.page || 1) >= totalPages;
+
+                if (currentData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">No attendance records found matching filters.</td></tr>`;
                     return;
                 }
 
-                filtered.forEach(log => {
+                currentData.forEach(log => {
                     const tr = document.createElement('tr');
                     const isFace = log.method === 'FaceRecognition';
                     tr.innerHTML = `
                         <td><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-muted);">#STD-${log.student_id}</span></td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${log.student_name.charAt(0)}</div>
-                                <span style="font-weight: 600;">${log.student_name}</span>
+                                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${(log.student_name || 'U').charAt(0)}</div>
+                                <div>
+                                    <div style="font-weight: 600;">${log.student_name}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${log.course_name || ''}</div>
+                                </div>
                             </div>
                         </td>
-                        <td><span style="color: var(--text-secondary);">${log.subject_name}</span></td>
-                        <td><span style="font-size: 0.875rem; color: var(--text-muted);">${log.date}</span></td>
+                        <td><span style="color: var(--text-secondary); font-weight: 500;">${log.subject_name}</span></td>
+                        <td><span style="font-size: 0.875rem; color: var(--text-muted);">${log.date} ${log.timestamp ? log.timestamp.slice(11, 16) : ''}</span></td>
+                        <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: ${log.session_id ? 'var(--primary-light)' : 'var(--text-muted)'};">${log.session_id ? '#' + log.session_id : 'Direct'}</span></td>
                         <td>
                             <span class="status-pill ${log.status === 'Present' ? 'present' : 'absent'}">
                                 ${log.status === 'Present' ? '● Present' : '✕ Absent'}
@@ -237,15 +352,80 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 3rem;">Failed to fetch records.</td></tr>`;
             }
         }
 
-        document.getElementById('applyFiltersBtn').onclick = loadData;
+        async function loadSecurityLogs() {
+            const tbody = document.getElementById('securityRows');
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading anomalies...</td></tr>`;
+
+            const data = await apiRequest('/audit/suspicious-activity');
+            tbody.innerHTML = '';
+
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const isPending = item.status === 'PENDING';
+                    tr.innerHTML = `
+                        <td><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">#INC-${item.id}</span></td>
+                        <td>
+                            <span class="status-pill" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                                ${item.activity_type.replace(/_/g, ' ')}
+                            </span>
+                        </td>
+                        <td><span style="font-weight: 600;">${item.student_name || 'Unidentified'}</span></td>
+                        <td><span style="font-size: 0.85rem; color: var(--text-muted);">${item.subject_name || 'N/A'} (Session #${item.session_id || 'N/A'})</span></td>
+                        <td><span style="font-size: 0.825rem; color: var(--text-secondary);">${item.details || 'No details'}</span></td>
+                        <td><span style="font-size: 0.8rem; color: var(--text-muted);">${item.created_at ? item.created_at.replace('T', ' ') : ''}</span></td>
+                        <td>
+                            <span class="status-pill ${isPending ? 'absent' : 'present'}">
+                                ${item.status}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            ${isPending ? `<button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="resolveIncident(${item.id})">Mark Resolved</button>` : `<span style="color: var(--success); font-size: 0.8rem;">✓ Resolved</span>`}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">No security anomalies or spoofing alerts detected.</td></tr>`;
+            }
+        }
+
+        async function resolveIncident(id) {
+            try {
+                const res = await apiRequest(`/audit/suspicious-activity/${id}/resolve`, 'POST');
+                if (res && res.success) {
+                    showToast('Incident marked as resolved', 'success');
+                    loadSecurityLogs();
+                } else {
+                    showToast(res.message || 'Failed to resolve incident', 'danger');
+                }
+            } catch (err) {
+                showToast('Failed to resolve incident', 'danger');
+            }
+        }
+
+        document.getElementById('applyFiltersBtn').onclick = () => loadData(1);
         document.getElementById('resetBtn').onclick = () => {
+            document.getElementById('searchFilter').value = '';
             document.getElementById('subjectFilter').value = '';
-            document.getElementById('dateFilter').value = '';
+            document.getElementById('startDateFilter').value = '';
+            document.getElementById('endDateFilter').value = '';
             document.getElementById('statusFilter').value = '';
-            loadData();
+            document.getElementById('methodFilter').value = '';
+            loadData(1);
+        };
+
+        document.getElementById('prevPageBtn').onclick = () => {
+            if (currentPage > 1) loadData(currentPage - 1);
+        };
+
+        document.getElementById('nextPageBtn').onclick = () => {
+            if (currentPage < totalPages) loadData(currentPage + 1);
         };
 
         // CSV Export functionality
@@ -255,16 +435,17 @@
                 return;
             }
 
-            let csv = 'ID,Student ID,Student Name,Subject,Date,Status,Method\n';
+            let csv = 'ID,Student ID,Student Name,Course,Subject,Date,Time,Session ID,Status,Method\n';
             currentData.forEach(row => {
-                csv += `${row.id},${row.student_id},"${row.student_name}","${row.subject_name}",${row.date},${row.status},${row.method}\n`;
+                const time = row.timestamp ? row.timestamp.slice(11, 16) : '';
+                csv += `${row.id},${row.student_id},"${row.student_name}","${row.course_name || ''}","${row.subject_name}",${row.date},${time},${row.session_id || ''},${row.status},${row.method}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.setAttribute('href', url);
-            link.setAttribute('download', `Attendify_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute('download', `Attendify_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

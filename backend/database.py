@@ -132,11 +132,29 @@ def init_db():
             except Exception:
                 pass
 
+            # Attendance Sessions table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS attendance_sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                subject_id INT NOT NULL,
+                teacher_id INT NOT NULL,
+                session_code VARCHAR(50) UNIQUE NOT NULL,
+                date VARCHAR(20) NOT NULL,
+                start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                end_time TIMESTAMP NULL,
+                status VARCHAR(20) DEFAULT 'ACTIVE',
+                total_marked INT DEFAULT 0,
+                FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+                FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_sess_lookup (subject_id, status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
 
             # Attendance table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS attendance (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id INT NULL,
                 student_id INT NOT NULL,
                 subject_id INT NOT NULL,
                 teacher_id INT NOT NULL,
@@ -151,6 +169,43 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
 
+            # Auto-migrate session_id in attendance
+            try:
+                cursor.execute("ALTER TABLE attendance ADD COLUMN session_id INT NULL;")
+            except Exception:
+                pass
+
+            # Liveness Verification Audit table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS liveness_attempts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id INT NULL,
+                student_id INT NULL,
+                subject_id INT NOT NULL,
+                liveness_status VARCHAR(30) NOT NULL,
+                liveness_type VARCHAR(50) DEFAULT 'TEXTURE_AND_MOTION',
+                score FLOAT DEFAULT 1.0,
+                details VARCHAR(255),
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_live_student (student_id, timestamp)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Suspicious Activity & Anomaly Detection table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS suspicious_activities (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                student_id INT NULL,
+                student_name VARCHAR(150),
+                activity_type VARCHAR(100) NOT NULL,
+                severity VARCHAR(20) DEFAULT 'MEDIUM',
+                details TEXT,
+                resolved TINYINT(1) DEFAULT 0,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_susp_type (activity_type, timestamp)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
             # --- SEED DATA ---
             # 0. Initial Admin
             cursor.execute("SELECT id FROM users WHERE role = 'admin' LIMIT 1;")
@@ -161,6 +216,7 @@ def init_db():
                     ('admin', hashed, 'admin@attendify.com', 'admin', 'System Administrator')
                 )
                 logger.info("Default Admin created (admin / admin123)")
+
 
             # Initial Teacher
             cursor.execute("SELECT id FROM users WHERE role = 'teacher' LIMIT 1;")
@@ -236,6 +292,63 @@ def init_db():
                     )
                 logger.info("10 Initial Demo Students seeded.")
 
+            # 4. Seed Multi-Session Attendance History for AI Analytics (if attendance < 15 records)
+            cursor.execute("SELECT COUNT(*) AS cnt FROM attendance;")
+            if cursor.fetchone()['cnt'] < 15:
+                cursor.execute("SELECT s.id as student_id, s.course_id, u.full_name FROM students s JOIN users u ON s.user_id = u.id LIMIT 10;")
+                all_stds = cursor.fetchall()
+                cursor.execute("SELECT id, course_id FROM subjects;")
+                all_subs = cursor.fetchall()
+                cursor.execute("SELECT id FROM users WHERE role = 'teacher' LIMIT 1;")
+                t_row = cursor.fetchone()
+                teacher_id = t_row['id'] if t_row else 1
+
+                import datetime
+                base_date = datetime.date.today() - datetime.timedelta(days=12)
+                
+                # Create sample sessions
+                for day_offset in range(10):
+                    sess_date = (base_date + datetime.timedelta(days=day_offset)).strftime('%Y-%m-%d')
+                    for sub in all_subs[:2]:
+                        cursor.execute(
+                            "INSERT INTO attendance_sessions (subject_id, teacher_id, session_code, date, status, total_marked) VALUES (%s, %s, %s, %s, 'ENDED', 5)",
+                            (sub['id'], teacher_id, f"SESS-{sess_date}-{sub['id']}", sess_date)
+                        )
+                        sess_id = cursor.lastrowid
+
+                        # Mark student attendance with varied patterns (high, medium, low risk)
+                        for idx, std in enumerate(all_stds):
+                            if std['course_id'] == sub['course_id']:
+                                # Create variance for AI trend detection:
+                                # Student 0,1: High attendance (90%+) -> LOW risk
+                                # Student 2: Declining attendance -> MEDIUM/HIGH risk
+                                # Student 3: Consistently low (50%) -> HIGH risk
+                                if idx in (0, 1):
+                                    status = 'Present' if day_offset != 3 else 'Absent'
+                                elif idx == 2:
+                                    status = 'Present' if day_offset < 4 else 'Absent'
+                                elif idx == 3:
+                                    status = 'Absent' if day_offset % 2 == 0 else 'Present'
+                                else:
+                                    status = 'Present' if day_offset % 3 != 0 else 'Absent'
+
+                                cursor.execute(
+                                    "INSERT INTO attendance (session_id, student_id, subject_id, teacher_id, date, status, method) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                                    (sess_id, std['student_id'], sub['id'], teacher_id, sess_date, status, 'FaceRecognition' if status == 'Present' else 'Manual')
+                                )
+                logger.info("Multi-Session AI Attendance History seeded successfully.")
+
+            # 5. Seed Initial Suspicious Activities
+            cursor.execute("SELECT COUNT(*) AS cnt FROM suspicious_activities;")
+            if cursor.fetchone()['cnt'] == 0:
+                cursor.execute("""
+                INSERT INTO suspicious_activities (student_name, activity_type, severity, details) VALUES
+                ('Alex Johnson', 'REPEATED_LIVENESS_FAILURE', 'MEDIUM', 'Multiple failed liveness checks (static photo texture detected) during Web Engineering session'),
+                ('Ethan Davis', 'DUPLICATE_SCAN_ATTEMPT', 'LOW', 'Duplicate biometric recognition attempt recorded 12s after initial verification'),
+                ('Unknown Face', 'UNRECOGNIZED_FACE_FLOOD', 'HIGH', '5 consecutive unmapped biometric captures detected at terminal without match')
+                """)
+                logger.info("Initial Suspicious Activities seeded.")
+
         conn.close()
         logger.info("TiDB Cloud database initialized successfully!")
     except Exception as e:
@@ -244,4 +357,5 @@ def init_db():
 
 if __name__ == '__main__':
     init_db()
+
 

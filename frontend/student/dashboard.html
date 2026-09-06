@@ -44,19 +44,37 @@
             </div>
         </header>
 
-        <!-- Exam Eligibility Alert Banner -->
-        <div id="eligibilityBanner" class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--success);">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--success-bg); display: flex; align-items: center; justify-content: center; color: var(--success);">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <!-- AI Attendance Intelligence & Actionable Predictions Hero Banner -->
+        <div id="eligibilityBanner" class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem; border-left: 5px solid var(--success);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+                <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--success-bg); display: flex; align-items: center; justify-content: center; color: var(--success); flex-shrink: 0;" id="eligibilityIconWrap">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                            <h2 style="font-size: 1.35rem; font-weight: 800;" id="eligibilityTitle">Institutional Standing: Good</h2>
+                            <span id="riskBadge" class="status-pill present" style="font-size: 0.8rem; font-weight: 700;">LOW RISK</span>
+                            <span id="trendBadge" class="status-pill" style="background: rgba(99, 102, 241, 0.15); color: var(--primary-light); font-size: 0.8rem; font-weight: 700;">↑ IMPROVING</span>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;" id="eligibilitySub">
+                            Your attendance is compliant with examination eligibility criteria (Minimum 75.0% required).
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h4 style="font-size: 1rem; font-weight: 700;" id="eligibilityTitle">Exam Eligible (Above 75% Requirement)</h4>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary);" id="eligibilitySub">Your attendance is compliant with institutional examination rules.</p>
+
+                <div style="text-align: right;">
+                    <div style="font-size: 2.25rem; font-weight: 900; color: var(--success); line-height: 1;" id="topRateNumber">--%</div>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Overall Attendance</span>
                 </div>
             </div>
-            <div style="text-align: right;">
-                <span style="font-size: 1.75rem; font-weight: 800; color: var(--success);" id="topRateNumber">100%</span>
+
+            <!-- Actionable Forecast Alert Box -->
+            <div id="actionableAdviceCard" style="margin-top: 1.25rem; padding: 1rem 1.25rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.875rem;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" id="adviceIcon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);" id="actionableAdviceText">
+                    Calculating your personal miss/recovery forecast...
+                </div>
             </div>
         </div>
 
@@ -64,21 +82,8 @@
         <div class="stat-grid" style="margin-bottom: 2rem;">
             <div class="stat-card">
                 <div class="stat-header">
-                    <span class="stat-title">Overall Present Rate</span>
-                    <div class="stat-icon-wrapper" style="background: var(--success-bg); color: var(--success);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </div>
-                </div>
-                <div class="stat-value" id="overallRate">0%</div>
-                <div class="stat-footer">
-                    <span style="color: var(--text-muted);">Across all registered classes</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
                     <span class="stat-title">Classes Attended</span>
-                    <div class="stat-icon-wrapper">
+                    <div class="stat-icon-wrapper" style="background: var(--success-bg); color: var(--success);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
                     </div>
                 </div>
@@ -90,14 +95,27 @@
 
             <div class="stat-card">
                 <div class="stat-header">
-                    <span class="stat-title">Total Enrolled Subjects</span>
+                    <span class="stat-title">Classes Missed</span>
+                    <div class="stat-icon-wrapper" style="background: rgba(244, 63, 94, 0.1); color: var(--danger);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </div>
+                </div>
+                <div class="stat-value" id="absentClasses">0</div>
+                <div class="stat-footer">
+                    <span style="color: var(--text-muted);">Recorded unexcused absences</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Required Minimum</span>
                     <div class="stat-icon-wrapper" style="background: rgba(14, 165, 233, 0.1); color: var(--info);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                     </div>
                 </div>
-                <div class="stat-value" id="subjectCount">0</div>
+                <div class="stat-value">75.0%</div>
                 <div class="stat-footer">
-                    <span style="color: var(--text-muted);">Current semester syllabus</span>
+                    <span style="color: var(--text-muted);">University criteria threshold</span>
                 </div>
             </div>
         </div>
@@ -108,7 +126,7 @@
             <div class="glass-card" style="padding: 1.5rem;">
                 <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                    <span>Subject Performance Breakdown</span>
+                    <span>Subject-by-Subject AI Analytics</span>
                 </h3>
                 <div id="subjectProgressList" style="display: flex; flex-direction: column; gap: 1.25rem;">
                     <p style="color: var(--text-muted); font-size: 0.85rem;">Calculating subject metrics from TiDB...</p>
@@ -119,7 +137,7 @@
             <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h3 style="font-size: 1.15rem;">Recent Attendance Logs</h3>
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time Telemetry</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Biometric Audit Trail</span>
                 </div>
                 <div style="flex: 1; overflow-y: auto; max-height: 380px;">
                     <table style="width: 100%;">
@@ -151,8 +169,9 @@
             document.getElementById('studentName').textContent = studentName;
             document.getElementById('studentAvatar').textContent = studentName.charAt(0).toUpperCase();
 
-            // Fetch profile & attendance data
+            // Fetch profile
             const profile = await apiRequest('/profile');
+            const studentId = profile?.student_id;
             if (profile && profile.student_id) {
                 document.getElementById('studentIdDisplay').textContent = `#STD-${profile.student_id}`;
                 if (profile.course_name) {
@@ -160,101 +179,124 @@
                 }
             }
 
-            const attendance = await apiRequest('/reports/attendance');
-            const studentId = profile?.student_id || localStorage.getItem('user_id');
+            if (!studentId) return;
 
-            let myLogs = [];
-            if (Array.isArray(attendance)) {
-                myLogs = attendance.filter(a => String(a.student_id) === String(studentId) || a.student_name === studentName);
-            }
+            // Fetch AI Analytics
+            const analytics = await apiRequest(`/analytics/student/${studentId}`);
+            if (analytics && analytics.overall_metrics) {
+                const metrics = analytics.overall_metrics;
+                const rate = metrics.attendance_rate;
 
-            const totalConducted = myLogs.length;
-            const totalPresent = myLogs.filter(a => a.status === 'Present').length;
-            const rate = totalConducted > 0 ? Math.round((totalPresent / totalConducted) * 100) : 100;
+                document.getElementById('topRateNumber').textContent = `${rate}%`;
+                document.getElementById('attendedClasses').textContent = metrics.attended_classes;
+                document.getElementById('absentClasses').textContent = metrics.absent_classes;
+                document.getElementById('totalClassesSub').textContent = `Out of ${metrics.total_classes} sessions conducted`;
 
-            document.getElementById('overallRate').textContent = `${rate}%`;
-            document.getElementById('topRateNumber').textContent = `${rate}%`;
-            document.getElementById('attendedClasses').textContent = totalPresent;
-            document.getElementById('totalClassesSub').textContent = `Out of ${totalConducted} sessions conducted`;
+                // Update Risk & Trend Pills
+                const riskBadge = document.getElementById('riskBadge');
+                const trendBadge = document.getElementById('trendBadge');
+                const banner = document.getElementById('eligibilityBanner');
+                const elTitle = document.getElementById('eligibilityTitle');
+                const elSub = document.getElementById('eligibilitySub');
+                const topRate = document.getElementById('topRateNumber');
+                const adviceCard = document.getElementById('actionableAdviceCard');
+                const adviceText = document.getElementById('actionableAdviceText');
 
-            // Eligibility threshold check
-            const banner = document.getElementById('eligibilityBanner');
-            const elTitle = document.getElementById('eligibilityTitle');
-            const elSub = document.getElementById('eligibilitySub');
-            const topRate = document.getElementById('topRateNumber');
+                riskBadge.textContent = metrics.risk_label;
+                trendBadge.textContent = `${metrics.trend_symbol} ${metrics.trend}`;
 
-            if (rate < 75) {
-                banner.style.borderLeftColor = 'var(--danger)';
-                elTitle.textContent = 'Attendance Shortage Warning (< 75%)';
-                elTitle.style.color = 'var(--danger)';
-                elSub.textContent = 'You are currently falling below the 75% examination eligibility criteria.';
-                topRate.style.color = 'var(--danger)';
-            }
-
-            // Subject Breakdown
-            const subjectStats = {};
-            myLogs.forEach(log => {
-                if (!subjectStats[log.subject_name]) {
-                    subjectStats[log.subject_name] = { total: 0, present: 0 };
+                if (metrics.risk_level === 'HIGH') {
+                    riskBadge.className = 'status-pill absent';
+                    banner.style.borderLeftColor = '#f43f5e';
+                    topRate.style.color = '#f43f5e';
+                    elTitle.textContent = 'Attendance Shortage Warning (< 75%)';
+                    elTitle.style.color = '#f43f5e';
+                    elSub.textContent = 'You are currently falling below the 75% institutional requirement. Take immediate action.';
+                    adviceCard.style.background = 'rgba(244, 63, 94, 0.08)';
+                    adviceCard.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+                    document.getElementById('adviceIcon').setAttribute('stroke', '#f43f5e');
+                } else if (metrics.risk_level === 'MEDIUM') {
+                    riskBadge.className = 'status-pill warning';
+                    banner.style.borderLeftColor = '#f59e0b';
+                    topRate.style.color = '#f59e0b';
+                    elTitle.textContent = 'Moderate Attendance Risk (Near Threshold)';
+                    elTitle.style.color = '#f59e0b';
+                    elSub.textContent = 'Your attendance is borderline. Regular attendance is advised to prevent shortage.';
+                    adviceCard.style.background = 'rgba(245, 158, 11, 0.08)';
+                    adviceCard.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                    document.getElementById('adviceIcon').setAttribute('stroke', '#f59e0b');
+                } else {
+                    riskBadge.className = 'status-pill present';
+                    banner.style.borderLeftColor = '#10b981';
+                    topRate.style.color = '#10b981';
+                    elTitle.textContent = 'Institutional Standing: Good (Above 75%)';
+                    elTitle.style.color = 'var(--text-primary)';
+                    elSub.textContent = 'Your attendance is fully compliant with institutional examination rules.';
+                    adviceCard.style.background = 'rgba(16, 185, 129, 0.08)';
+                    adviceCard.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                    document.getElementById('adviceIcon').setAttribute('stroke', '#10b981');
                 }
-                subjectStats[log.subject_name].total++;
-                if (log.status === 'Present') subjectStats[log.subject_name].present++;
-            });
 
-            const subKeys = Object.keys(subjectStats);
-            document.getElementById('subjectCount').textContent = subKeys.length || 0;
+                adviceText.textContent = metrics.actionable_advice;
 
-            const progressContainer = document.getElementById('subjectProgressList');
-            progressContainer.innerHTML = '';
+                // Subject-wise Breakdown
+                const progressContainer = document.getElementById('subjectProgressList');
+                progressContainer.innerHTML = '';
 
-            if (subKeys.length === 0) {
-                progressContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No class attendance recorded yet.</p>';
-            } else {
-                subKeys.forEach(sub => {
-                    const st = subjectStats[sub];
-                    const subRate = Math.round((st.present / st.total) * 100);
-                    const isGood = subRate >= 75;
+                if (analytics.subject_breakdown && analytics.subject_breakdown.length > 0) {
+                    analytics.subject_breakdown.forEach(sub => {
+                        const subRate = sub.attendance_rate;
+                        const isGood = subRate >= 75;
+                        const div = document.createElement('div');
+                        div.style.padding = '0.85rem';
+                        div.style.background = 'rgba(255,255,255,0.02)';
+                        div.style.borderRadius = 'var(--radius-md)';
+                        div.style.border = '1px solid var(--border-subtle)';
+                        div.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <span style="font-weight: 700; font-size: 0.9rem;">${sub.subject_name}</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">${sub.trend_symbol} ${sub.trend}</span>
+                                    <strong style="font-size: 0.85rem; color: ${isGood ? '#10b981' : '#f43f5e'};">${subRate}% (${sub.attended_classes}/${sub.total_classes})</strong>
+                                </div>
+                            </div>
+                            <div style="width: 100%; height: 7px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; margin-bottom: 0.35rem;">
+                                <div style="width: ${Math.min(100, subRate)}%; height: 100%; background: ${isGood ? 'var(--primary-gradient)' : '#f43f5e'}; border-radius: 999px;"></div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${sub.actionable_advice}</div>
+                        `;
+                        progressContainer.appendChild(div);
+                    });
+                } else {
+                    progressContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No class attendance recorded yet.</p>';
+                }
 
-                    const div = document.createElement('div');
-                    div.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                            <span style="font-weight: 600; font-size: 0.9rem;">${sub}</span>
-                            <span style="font-weight: 700; font-size: 0.85rem; color: ${isGood ? 'var(--success)' : 'var(--danger)'};">${subRate}% (${st.present}/${st.total})</span>
-                        </div>
-                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden;">
-                            <div style="width: ${subRate}%; height: 100%; background: ${isGood ? 'var(--gradient-primary)' : 'var(--danger)'}; border-radius: 999px;"></div>
-                        </div>
-                    `;
-                    progressContainer.appendChild(div);
-                });
-            }
-
-            // Render Logs Table
-            const tbody = document.getElementById('studentLogs');
-            tbody.innerHTML = '';
-
-            if (myLogs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No recent logs.</td></tr>';
-            } else {
-                myLogs.slice(0, 10).forEach(log => {
-                    const tr = document.createElement('tr');
-                    const isFace = log.method === 'FaceRecognition';
-                    tr.innerHTML = `
-                        <td><span style="font-weight: 500;">${log.subject_name}</span></td>
-                        <td><span style="color: var(--text-muted); font-size: 0.825rem;">${log.date}</span></td>
-                        <td>
-                            <span class="status-pill ${log.status === 'Present' ? 'present' : 'absent'}">
-                                ${log.status === 'Present' ? '● Present' : '✕ Absent'}
-                            </span>
-                        </td>
-                        <td style="text-align: right;">
-                            <span style="font-size: 0.75rem; color: ${isFace ? 'var(--primary-light)' : 'var(--text-muted)'};">
-                                ${isFace ? '⚡ Face AI' : '✍ Manual'}
-                            </span>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                // Recent History Logs
+                const tbody = document.getElementById('studentLogs');
+                tbody.innerHTML = '';
+                if (analytics.recent_history && analytics.recent_history.length > 0) {
+                    analytics.recent_history.forEach(log => {
+                        const tr = document.createElement('tr');
+                        const isFace = log.method === 'FaceRecognition' || log.method === 'AI-MultiFace';
+                        tr.innerHTML = `
+                            <td><span style="font-weight: 600;">${log.subject_name}</span></td>
+                            <td><span style="color: var(--text-muted); font-size: 0.825rem;">${log.date}</span></td>
+                            <td>
+                                <span class="status-pill ${log.status === 'Present' ? 'present' : 'absent'}">
+                                    ${log.status === 'Present' ? '● Present' : '✕ Absent'}
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <span style="font-size: 0.75rem; color: ${isFace ? 'var(--primary-light)' : 'var(--text-muted)'};">
+                                    ${isFace ? '⚡ Face AI' : '✍ Manual'}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No logs found.</td></tr>';
+                }
             }
         }
 
@@ -262,4 +304,5 @@
     </script>
 </body>
 </html>
+
 
