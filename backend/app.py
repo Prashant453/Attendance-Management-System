@@ -53,6 +53,13 @@ def token_required(f):
         token = None
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
+        elif 'Authorization' in request.headers:
+            auth_h = request.headers['Authorization']
+            if auth_h.startswith('Bearer '):
+                token = auth_h.split(' ', 1)[1].strip()
+            else:
+                token = auth_h.strip()
+
         if not token:
             return jsonify({'message': 'Authentication token is missing!'}), 401
         try:
